@@ -1,9 +1,10 @@
 const express = require('express');
-const { bookRoom, viewBookings, cancelBooking } = require('../controllers/bookingController');
+const { bookRoom, viewMyBookings, cancelBooking, viewBookingsByDateRange } = require('../controllers/bookingController');
 const router = express.Router();
 
 router.post('/book', bookRoom);
-router.get('/', viewBookings);
+router.get('/', viewMyBookings);
+router.get('/byDateRange', viewBookingsByDateRange);
 router.delete('/:id', cancelBooking);
 
 module.exports = router;

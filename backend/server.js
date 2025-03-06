@@ -6,8 +6,9 @@ const passport = require('./config/passport'); // Import Passport configuration
 const authRoutes = require('./routes/auth'); // Import auth routes
 // Import routes
 const roomRoutes = require('./routes/roomRoutes'); // Ensure this is correctly imported
-const userRoutes = require('./routes/userRoutes');
+// const userRoutes = require('./routes/userRoutes');
 const bookingRoutes = require('./routes/bookingRoutes');
+const { protect } = require('./middlewares/authMiddleware');
 
 require('dotenv').config();
 
@@ -35,8 +36,8 @@ app.use('/auth', authRoutes);
 
 // Use routes correctly
 app.use('/api/rooms', roomRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/bookings', bookingRoutes);
+// app.use('/api/users', userRoutes);
+app.use('/api/bookings',protect, bookingRoutes);
 
 // Start the server
 const PORT = process.env.PORT || 5000;

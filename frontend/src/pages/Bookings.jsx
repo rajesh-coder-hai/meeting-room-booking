@@ -4,10 +4,8 @@ import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import moment from "moment";
-// import 'fullcalendar/main.css';
 import Modal from "react-bootstrap/Modal";
-import BookRoom from "../components/BookRoom";
-// import { fetchRooms } from "../api/api";
+import BookRoomForm from "../components/BookRoomForm";
 
 const Bookings = () => {
   const calendarRef = useRef(null);
@@ -72,14 +70,28 @@ const Bookings = () => {
       borderColor: "transparent",
     }))
   );
+  const [currentView, setCurrentView] = useState("timeGridWeek");
+
+  const handleViewChange = (arg) => {
+    console.log("View changed to:", arg.view.type);
+    setCurrentView(arg.view.type);
+  };
 
   useEffect(() => {
     if (calendarRef.current) {
       const calendarApi = calendarRef.current.getApi();
+      console.log("Calendar API:", calendarApi);
+
       calendarApi.setOption("events", events);
       calendarApi.setOption("height", 700);
     }
   }, [events]);
+
+  useEffect(()=>{
+    if (currentView){
+      getMeetingRoomAvailability(currentView);
+    }
+  },[currentView])
 
   function getRandomGradient() {
     const colors = [
@@ -95,6 +107,18 @@ const Bookings = () => {
     ];
     return colors[Math.floor(Math.random() * colors.length)];
   }
+
+  function getMeetingRoomAvailability(timeFilter=currentView) {
+    try {
+      //write the logic to get the meeting room availability initially for the week, after that based on the user selection i.e. month, day
+    } catch (error) {
+      console.log("Error from getMeetingRoomAvailability", error);
+    }
+  };
+
+  useEffect(() => {
+    getMeetingRoomAvailability();
+  }, []);
 
   const handleEventClick = (info) => {
     console.log("Event clicked:", info.event);
@@ -134,32 +158,22 @@ const Bookings = () => {
     });
     setEvents(updatedEvents);
   };
-// get all meeting rooms and update state
-  // const [rooms, setRooms] = useState([]);
-  // async function getRooms() {
-  //   try
-  //   const rooms = await fetchRooms();
-  //   console.log('rooms', rooms);
-  //       setRooms(rooms);
-  // }
-
-  // useEffect(() => {
-  //     getRooms();
-  // }, []);
 
   return (
     <div style={{ padding: "20px" }}>
-      <BookRoom />
+      <BookRoomForm />
       <div style={{ height: "300px" }}>
         <FullCalendar
           ref={calendarRef}
           plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-          initialView="timeGridWeek"
+          initialView={currentView}
+          datesSet={handleViewChange}
           headerToolbar={{
             left: "prev,next today",
             center: "title",
             right: "dayGridMonth,timeGridWeek,timeGridDay",
           }}
+          hand
           editable={true}
           eventDrop={handleEventDrop}
           eventResize={handleEventResize}

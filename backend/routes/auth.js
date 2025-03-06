@@ -33,7 +33,7 @@ router.get('/logout', (req, res) => {
         if (err) { return next(err); }
         
         req.session.destroy(() => {
-            res.redirect(`https://login.microsoftonline.com/${process.env.MICROSOFT_TENANT_ID}/oauth2/v2.0/logout?post_logout_redirect_uri=${process.env.CLIENT_URL}/login`);
+            res.redirect(`https://login.microsoftonline.com/${process.env.MICROSOFT_TENANT_ID}/oauth2/v2.0/logout?post_logout_redirect_uri=${process.env.CLIENT_URL}`);
         });
     });
 });

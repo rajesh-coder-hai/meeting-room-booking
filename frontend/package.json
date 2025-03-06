@@ -17,6 +17,7 @@
     "axios": "^1.8.1",
     "bootstrap": "^5.3.3",
     "formik": "^2.4.6",
+    "framer-motion": "^12.4.10",
     "fullcalendar": "^6.1.15",
     "jwt-decode": "^4.0.0",
     "moment": "^2.30.1",

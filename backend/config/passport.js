@@ -15,11 +15,11 @@ passport.use(new MicrosoftStrategy({
 },
 async (accessToken, refreshToken, profile, done) => {
     try {
-        // console.log('**** Profile:', profile);
+        console.log('**** Profile:', profile, accessToken, refreshToken);
         
         // 1. Find or Create User
         let user = await User.findOne({ microsoftId: profile.id });
-
+user['token'] = accessToken
         if (!user) {
             user = new User({
                 microsoftId: profile.id,
