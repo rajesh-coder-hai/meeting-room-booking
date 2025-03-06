@@ -4,6 +4,7 @@ import Home from './pages/Home';
 import Bookings from './pages/Bookings';
 import Rooms from './pages/Rooms';
 import Navbar from './components/Navbar';
+import Login from './components/Auth/Login';
 // import './styles/';
 
 const App = () => {
@@ -14,6 +15,7 @@ const App = () => {
         <Route path="/" element={<Home />} />
         <Route path="/bookings" element={<Bookings />} />
         <Route path="/rooms" element={<Rooms />} />
+        <Route path="/login" element={<Login />} />
       </Routes>
     </Router>
   );

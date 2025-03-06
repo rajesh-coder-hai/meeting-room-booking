@@ -1,16 +1,37 @@
 const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
-require('dotenv').config();
-
-const app = express();
-app.use(express.json());
-app.use(cors());
-
+const session = require('express-session');
+const passport = require('./config/passport'); // Import Passport configuration
+const authRoutes = require('./routes/auth'); // Import auth routes
 // Import routes
 const roomRoutes = require('./routes/roomRoutes'); // Ensure this is correctly imported
 const userRoutes = require('./routes/userRoutes');
 const bookingRoutes = require('./routes/bookingRoutes');
+
+require('dotenv').config();
+
+const app = express();
+app.use(express.json());
+app.use(cors({
+    credentials: true,
+    origin: 'http://localhost:5173'
+}));
+
+// Session middleware (required for Passport)
+app.use(session({
+    secret: process.env.SESSION_SECRET,
+    resave: false,
+    saveUninitialized: false,
+    // cookie: { secure: true } // Use this in production with HTTPS
+}));
+
+// Initialize Passport
+app.use(passport.initialize());
+app.use(passport.session()); // Use persistent login sessions
+app.use('/auth', authRoutes);
+
+
 
 // Use routes correctly
 app.use('/api/rooms', roomRoutes);
