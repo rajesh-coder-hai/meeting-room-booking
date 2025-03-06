@@ -1,0 +1,25 @@
+# Node.js and Express files to ignore
+
+node_modules/
+npm-debug.log
+package-lock.json
+
+# Logs
+logs/
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+
+# Environment files
+.env
+config/env.js
+
+# Build files
+build/
+dist/
