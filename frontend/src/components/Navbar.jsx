@@ -1,21 +1,21 @@
-import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 // import { logoutFromMicrosoft } from '../api/api';
 
 const Navbar = () => {
   // const navigate = useNavigate();
-  const [isLogin, setIsLogin] = useState(false);
+  const [isLoggedIn, setIsLogin] = useState(false);
   const checkLoginStatus = () => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem("token");
     if (!token) {
       setIsLogin(false);
     } else {
       setIsLogin(true);
     }
-  }
-useEffect(() => {
-  checkLoginStatus()
-},[])
+  };
+  useEffect(() => {
+    checkLoginStatus();
+  }, []);
 
   return (
     <nav className="navbar navbar-expand-lg navbar-light bg-light">
@@ -36,7 +36,6 @@ useEffect(() => {
         </button>
         <div className="collapse navbar-collapse" id="navbarNav">
           <ul className="navbar-nav">
-     
             <li className="nav-item">
               <Link className="nav-link" to="/rooms">
                 <i className="bi bi-grid"></i> Rooms
@@ -48,8 +47,23 @@ useEffect(() => {
               </Link>
             </li> */}
             <li className="nav-item">
-              <a href={isLogin ? `${import.meta.env.VITE_API_BASE_URL}/auth/logout` : `${import.meta.env.VITE_API_BASE_URL}/auth/microsoft?token=${localStorage.getItem('token')}`} className="btn btn-link nav-link" >
-                <i className="bi bi-box-arrow-right"></i> {isLogin ? "Logout" : "Login"}
+              <a
+                href={
+                  isLoggedIn
+                    ? `${import.meta.env.VITE_API_BASE_URL}/auth/logout`
+                    : `${
+                        import.meta.env.VITE_API_BASE_URL
+                      }/auth/microsoft?token=${localStorage.getItem("token")}`
+                }
+                className="btn btn-link nav-link"
+                onClick={() => {
+                  if (isLoggedIn) {
+                    localStorage.clear(); // Clear all localStorage data on logout
+                  }
+                }}
+              >
+                <i className="bi bi-box-arrow-right"></i>{" "}
+                {isLoggedIn ? "Logout" : "Login"}
               </a>
             </li>
           </ul>

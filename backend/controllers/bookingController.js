@@ -1,14 +1,17 @@
 const Booking = require("../models/Booking");
-const Room = require("../models/Room");
+// const Room = require("../models/Room");
+
 // Function to check room availability
-const isRoomAvailable = async (roomId, start, end) => {
+const isRoomAvailable = async (roomId, start, end, meetingId=null) => {
     const overlappingBooking = await Booking.findOne({
         roomId,
         $or: [
             { start: { $lt: end }, end: { $gt: start } }, // Overlapping condition
         ],
     });
-
+if (overlappingBooking && overlappingBooking._id.toString() === meetingId) {
+    return true; // Room is not available
+}
     return !overlappingBooking; // If no overlapping booking, room is available
 };
 
@@ -52,16 +55,29 @@ exports.viewMyBookings = async (req, res) => {
 
 exports.viewBookingsByDateRange = async (req, res) => {
     const { startDate, endDate, roomId } = req.query;
+
     try {
+        if (!startDate || !endDate || !roomId) {
+            return res.status(400).json({ message: "Missing required query parameters" });
+        }
+
         const bookings = await Booking.find({
-            roomId: roomId,
-            date: { $gte: new Date(startDate), $lte: new Date(endDate) },
-        }).populate("room");
+            roomId,
+            $or: [
+                {
+                    start: { $lte: endDate },
+                    end: { $gte: startDate }
+                },
+            ],
+        }).populate("roomId");
+
         res.json(bookings);
     } catch (error) {
-        res.status(400).json({ message: "Error fetching bookings", error });
+        console.error("Error fetching bookings:", error);
+        res.status(500).json({ message: "Internal server error", error });
     }
 };
+
 
 // Cancel booking
 exports.cancelBooking = async (req, res) => {
@@ -78,4 +94,29 @@ exports.cancelBooking = async (req, res) => {
     }
 };
 
-// Get all rooms
+// update booking by id
+exports.updateBookingById = async (req, res) => {
+    const { id: bookingId } = req.params;
+    try {
+        const { roomId: { _id: myRoomId }, start, end } = req.body;
+        //check if room is available
+        const available = await isRoomAvailable(myRoomId, start, end, bookingId);
+        console.log("available---", available);
+
+        if (!available) {
+            return res
+                .status(400)
+                .json({ error: "Room not available during the time slot." });
+        }
+
+        const booking = await Booking.findOneAndUpdate(
+            { _id: bookingId, user: req.user._id },
+            req.body,
+            { new: true }
+        );
+        if (!booking) return res.status(404).json({ message: "You are not allowed to update this meeting." });
+        res.json(booking);
+    } catch (error) {
+        res.status(400).json({ message: "Error updating booking", error });
+    }
+};

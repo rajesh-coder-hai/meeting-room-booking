@@ -6,119 +6,166 @@ import interactionPlugin from "@fullcalendar/interaction";
 import moment from "moment";
 import Modal from "react-bootstrap/Modal";
 import BookRoomForm from "../components/BookRoomForm";
+import {
+  fetchRooms,
+  getRoomBookingsByDateRange,
+  updateBooking,
+} from "../api/api";
+import { useSearchParams } from "react-router-dom";
+import { getRandomColor, randomGradient } from "../helper";
+import { useDispatch } from "react-redux";
+import { showErrorToast, showSuccessToast } from "../store/slices/sharedSlice";
+
 
 const Bookings = () => {
+  const dispatch = useDispatch();
+  const [searchParam, setSearchParam] = useSearchParams();
+  const roomId = searchParam.get("roomId");
+  const [currentMeetingRom, setCurrentMeetingRoom] = useState(roomId);
   const calendarRef = useRef(null);
+  const [rooms, setRooms] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [modalEvent, setModalEvent] = useState(null);
-  const [events, setEvents] = useState(
-    [
-      {
-        title: "All Day Meeting",
-        allDay: true,
-        start: moment().add(1, "days").format(),
-        end: moment().add(1, "days").format(),
-        extendedProps: {
-          description: "Important all day meeting",
-        },
+  const [events, setEvents] = useState([
+    {
+      title: "All Day Meeting",
+      allDay: true,
+      start: moment().add(1, "days").toISOString(),
+      end: moment().add(1, "days").toISOString(),
+      extendedProps: {
+        description: "Important all day meeting",
       },
-      {
-        title: "Project Review",
-        start: moment()
-          .add(2, "days")
-          .set({ hour: 10, minute: 0, second: 0 })
-          .format(),
-        end: moment()
-          .add(2, "days")
-          .set({ hour: 12, minute: 0, second: 0 })
-          .format(),
-        extendedProps: {
-          description: "Review project progress",
-        },
+    },
+    {
+      title: "Project Review",
+      start: moment()
+        .add(2, "days")
+        .set({ hour: 10, minute: 0, second: 0 })
+        .format(),
+      end: moment()
+        .add(2, "days")
+        .set({ hour: 12, minute: 0, second: 0 })
+        .format(),
+      extendedProps: {
+        description: "Review project progress",
       },
-      {
-        title: "Team Lunch",
-        start: moment()
-          .add(3, "days")
-          .set({ hour: 12, minute: 30, second: 0 })
-          .format(),
-        end: moment()
-          .add(3, "days")
-          .set({ hour: 13, minute: 30, second: 0 })
-          .format(),
-        extendedProps: {
-          description: "Team lunch at restaurant",
-        },
+    },
+    {
+      title: "Team Lunch",
+      start: moment()
+        .add(3, "days")
+        .set({ hour: 12, minute: 30, second: 0 })
+        .format(),
+      end: moment()
+        .add(3, "days")
+        .set({ hour: 13, minute: 30, second: 0 })
+        .format(),
+      extendedProps: {
+        description: "Team lunch at restaurant",
       },
-      {
-        title: "Overlapping Meeting",
-        start: moment()
-          .add(2, "days")
-          .set({ hour: 11, minute: 0, second: 0 })
-          .format(),
-        end: moment()
-          .add(2, "days")
-          .set({ hour: 13, minute: 0, second: 0 })
-          .format(),
-        extendedProps: {
-          description: "This meeting overlaps with Project Review",
-        },
+    },
+    {
+      title: "Overlapping Meeting",
+      start: moment()
+        .add(2, "days")
+        .set({ hour: 11, minute: 0, second: 0 })
+        .format(),
+      end: moment()
+        .add(2, "days")
+        .set({ hour: 13, minute: 0, second: 0 })
+        .format(),
+      extendedProps: {
+        description: "This meeting overlaps with Project Review",
       },
-    ].map((event) => ({
-      ...event,
-      backgroundColor: getRandomGradient(),
-      borderColor: "transparent",
-    }))
-  );
+    },
+  ]);
   const [currentView, setCurrentView] = useState("timeGridWeek");
 
   const handleViewChange = (arg) => {
-    console.log("View changed to:", arg.view.type);
     setCurrentView(arg.view.type);
   };
 
   useEffect(() => {
     if (calendarRef.current) {
       const calendarApi = calendarRef.current.getApi();
-      console.log("Calendar API:", calendarApi);
-
       calendarApi.setOption("events", events);
-      calendarApi.setOption("height", 700);
     }
   }, [events]);
 
-  useEffect(()=>{
-    if (currentView){
-      getMeetingRoomAvailability(currentView);
+  useEffect(() => {
+    if (currentView) {
+      getRoomAvailabilityByDateRange(currentView, currentMeetingRom);
     }
-  },[currentView])
+  }, [currentView, currentMeetingRom]);
 
-  function getRandomGradient() {
-    const colors = [
-      `linear-gradient(135deg, #${Math.floor(Math.random() * 16777215).toString(
-        16
-      )}, #${Math.floor(Math.random() * 16777215).toString(16)})`,
-      `linear-gradient(45deg, #${Math.floor(Math.random() * 16777215).toString(
-        16
-      )}, #${Math.floor(Math.random() * 16777215).toString(16)})`,
-      `linear-gradient(90deg, #${Math.floor(Math.random() * 16777215).toString(
-        16
-      )}, #${Math.floor(Math.random() * 16777215).toString(16)})`,
-    ];
-    return colors[Math.floor(Math.random() * colors.length)];
-  }
-
-  function getMeetingRoomAvailability(timeFilter=currentView) {
+  async function getRoomAvailabilityByDateRange(
+    timeFilter = currentView,
+    roomId
+  ) {
     try {
-      //write the logic to get the meeting room availability initially for the week, after that based on the user selection i.e. month, day
+      // Define start and end dates
+      let startDate, endDate;
+
+      switch (timeFilter) {
+        case "dayGridMonth":
+          startDate = moment().startOf("month").format();
+          endDate = moment().endOf("month").format();
+          break;
+
+        case "timeGridWeek":
+          startDate = moment().startOf("week").format();
+          endDate = moment().endOf("week").format();
+          break;
+
+        case "timeGridDay":
+          startDate = moment().startOf("day").format();
+          endDate = moment().endOf("day").format();
+          break;
+
+        default:
+          console.warn("Invalid time filter, defaulting to weekly view.");
+          startDate = moment().startOf("week").format();
+          endDate = moment().endOf("week").format();
+          break;
+      }
+
+      // Fetch the room bookings based on the calculated date range
+      const { data: availability } = await getRoomBookingsByDateRange(
+        roomId,
+        startDate,
+        endDate
+      );
+      const modifiedEvents = availability.map((event) => ({
+        ...event,
+        backgroundColor: moment(event.start).isBefore(moment().startOf("day"))
+          ? "gray"
+          : getRandomColor(),
+        start: moment(event.start).toISOString(),
+        end: moment(event.end).toISOString(),
+      }));
+      // Update state with retrieved events
+      setEvents(modifiedEvents);
     } catch (error) {
+      dispatch(
+        showErrorToast(error.response.data.error || "An error occurred!")
+      );
       console.log("Error from getMeetingRoomAvailability", error);
+    }
+  }
+  const getAllMeetingRooms = async () => {
+    try {
+      const { data: rooms } = await fetchRooms();
+      setRooms(rooms);
+    } catch (error) {
+      console.log("Error from getRooms", error);
     }
   };
 
   useEffect(() => {
-    getMeetingRoomAvailability();
+    getAllMeetingRooms();
   }, []);
+
+  useEffect(() => {}, [currentMeetingRom]);
 
   const handleEventClick = (info) => {
     console.log("Event clicked:", info.event);
@@ -131,22 +178,45 @@ const Bookings = () => {
     setShowModal(false);
   };
 
-  const handleEventDrop = (info) => {
-    const updatedEvents = events.map((event) => {
-      if (event.title === info.event.title) {
-        return {
-          ...event,
-          start: moment(info.event.start).format(),
-          end: info.event.end ? moment(info.event.end).format() : null,
-        };
-      }
-      return event;
-    });
-    setEvents(updatedEvents);
+  const handleEventDrop = async (info) => {
+    try {
+      const { _id: meetingId } = info.event.extendedProps;
+
+      const updatedEvents = events.map((event) => {
+        if (event.title === info.event.title) {
+          return {
+            ...event,
+            start: moment(info.event.start).format(),
+            end: info.event.end ? moment(info.event.end).format() : null,
+          };
+        }
+        return event;
+      });
+      // update the meeting record and then update the state
+      const myUpdatedEvent = updatedEvents.find(
+        (event) => event._id === meetingId
+      );
+      await updateBooking(meetingId, {
+        ...myUpdatedEvent,
+      });
+
+      setEvents(updatedEvents);
+      dispatch(showSuccessToast("Booking updated successfully!"));
+    } catch (error) {
+      info.revert();
+      console.log("Error from handleEventDrop", error);
+      dispatch(
+        showErrorToast(error.response.data.error || "An error occurred!")
+      );
+    }
   };
 
-  const handleEventResize = (info) => {
-    const updatedEvents = events.map((event) => {
+  const handleEventResize = async(info) => {
+    console.log("Event resized:", info.event);
+    
+    const { _id: meetingId } = info.event.extendedProps;
+    try {
+       const updatedEvents = events.map((event) => {
       if (event.title === info.event.title) {
         return {
           ...event,
@@ -156,25 +226,48 @@ const Bookings = () => {
       }
       return event;
     });
+    const myUpdatedEvent = updatedEvents.find(
+      (event) => event._id === meetingId
+    );
+    console.log("myUpdatedEvent", myUpdatedEvent);
+    
+    await updateBooking(meetingId, {
+      ...myUpdatedEvent,
+    });
+
     setEvents(updatedEvents);
+
+    } catch (error) {
+      info.revert();
+      console.log("Error from handleEventResize", error);
+      dispatch(
+        showErrorToast(error.response.data.error || "An error occurred!")
+      );
+    }
+   
   };
 
   return (
     <div style={{ padding: "20px" }}>
-      <BookRoomForm />
+      <BookRoomForm
+        rooms={rooms}
+        currentRoomId={currentMeetingRom}
+        handleRoomChange={(newRoom) => setCurrentMeetingRoom(newRoom)}
+      />
+
       <div style={{ height: "300px" }}>
         <FullCalendar
           ref={calendarRef}
           plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
           initialView={currentView}
-          datesSet={handleViewChange}
+          datesSet={handleViewChange} //event to identify when the view is changed
           headerToolbar={{
             left: "prev,next today",
             center: "title",
             right: "dayGridMonth,timeGridWeek,timeGridDay",
           }}
-          hand
           editable={true}
+          eventOverlap={false}
           eventDrop={handleEventDrop}
           eventResize={handleEventResize}
           events={events} // Initial events

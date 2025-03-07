@@ -13,19 +13,43 @@ API.interceptors.request.use((req) => {
   return req;
 });
 
-// Auth
-export const register = (data) => API.post('/auth/register', data);
-export const login = (data) => API.post('/auth/login', data);
-export const resetPassword = (data) => API.post('/auth/reset-password', data);
+
+// Response interceptor to handle 401 errors globally
+API.interceptors.response.use(
+  (response) => response, // For successful responses, just return the response
+  (error) => {
+    if (error.response && error.response.status === 401) {
+      // Remove token from local storage (or wherever you store it)
+      localStorage.removeItem('token');
+
+      // Redirect to the home page (or login page)
+      // Use window.location.href for immediate redirect (outside a component)
+      window.location.href = '/';
+
+      // OR, if you're inside a component and have access to useNavigate:
+      // const navigate = useNavigate(); // Get the navigate function
+      // navigate('/');
+
+       // Optionally, display a message to the user
+       // You could use a state variable in your component, a toast notification, etc.
+       console.log('Authentication failed. Redirecting to home page.');
+    }
+    return Promise.reject(error); // Important: Re-reject the error for further handling
+  }
+);
+
 
 // Rooms
 export const fetchRooms = () => API.get('/rooms');
 
+
 // Booking
 export const bookRoom = (data) => API.post('/bookings/book', data);
+export const getRoomBookingsByDateRange = (roomId, startDate, endDate) =>
+  API.get(`/bookings/byDateRange?roomId=${roomId}&startDate=${startDate}&endDate=${endDate}`);
 export const fetchBookings = (startDate, endDate) =>
   API.get(`/bookings?startDate=${startDate}&endDate=${endDate}`);
+
 export const cancelBooking = (id) => API.delete(`/bookings/${id}`);
 
-//Logout
-// export const logoutFromMicrosoft =()=> axios.get('http://localhost:5000/auth/logout'); // not needed as of now
+export const updateBooking = (id, data) => API.put(`/bookings/${id}`, data);

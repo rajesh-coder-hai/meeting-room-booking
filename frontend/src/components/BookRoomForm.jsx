@@ -1,28 +1,13 @@
-import React, { useEffect, useState } from "react";
-import { bookRoom, fetchRooms } from "../api/api";
+import React from "react";
+import { bookRoom } from "../api/api";
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
-import { useSearchParams } from "react-router-dom";
 import moment from "moment";
+import { useDispatch } from "react-redux";
+import {  showErrorToast, showSuccessToast } from "../store/slices/sharedSlice";
 
-const BookRoomForm = () => {
-  const [rooms, setRooms] = useState([]);
-  const [searchParam, setSearchParam] = useSearchParams();
-  const roomId = searchParam.get("roomId");
-
-  const getAllMeetingRooms = async () => {
-    try {
-      const { data: rooms } = await fetchRooms();
-      setRooms(rooms);
-    } catch (error) {
-      console.log("Error from getRooms", error);
-    }
-  };
-
-  useEffect(() => {
-    getAllMeetingRooms();
-  }, []);
-
+const BookRoomForm = ({rooms, handleRoomChange, currentRoomId}) => {
+ const dispatch = useDispatch();
   const handleSubmit = async (values) => {
     try {
       console.log("Form Values:", values);
@@ -35,9 +20,10 @@ const BookRoomForm = () => {
         },
       };
       await bookRoom(payload);
-      alert("Room booked successfully");
+      dispatch(showSuccessToast('Room booked successfully!'));
     } catch (error) {
-      console.error("Booking Error:", error);
+            console.error("Booking Error:", error);
+      dispatch(showErrorToast(error.response.data.error || 'An error occurred!'))
     }
   };
 
@@ -68,7 +54,7 @@ const BookRoomForm = () => {
     <Formik
       enableReinitialize
       initialValues={{
-        roomId: roomId || "",
+        roomId: currentRoomId || "",
         startTime: moment().add("30", "minutes").format("YYYY-MM-DDTHH:mm"),
         endTime: moment().add("60", "minutes").format("YYYY-MM-DDTHH:mm"),
         allDay: false,
@@ -90,7 +76,7 @@ const BookRoomForm = () => {
         <Form className="container my-5">
           <div className="row">
             <div className="col-md-4 mb-3">
-              <label htmlFor="roomId" className="form-label">
+              <label htmlFor="roomId" className="form-label fw-semibold">
                 Select Room*
               </label>
               <Field
@@ -98,8 +84,13 @@ const BookRoomForm = () => {
                 name="roomId"
                 className="form-select"
                 aria-label="select a meeting room"
+                onChange={(e) => {
+                  const selectedRoomId = e.target.value;
+                  setFieldValue("roomId", selectedRoomId); // Update Formik state
+                  handleRoomChange(selectedRoomId); // Call the callback function
+                }}
               >
-                <option value="">Select a meeting room</option>
+                <option value="" >Select a meeting room</option>
                 {rooms.map((room) => (
                   <option
                     key={room._id}
@@ -119,7 +110,7 @@ const BookRoomForm = () => {
             </div>
 
             <div className="col-md-4 mb-3">
-              <label htmlFor="startTime" className="form-label">
+              <label htmlFor="startTime" className="form-label fw-semibold">
                 Start Time*
               </label>
               <Field
@@ -134,8 +125,8 @@ const BookRoomForm = () => {
               />
             </div>
 
-            <div className="col-md-4 mb-3">
-              <label htmlFor="endTime" className="form-label">
+            <div className="col-md mb-3">
+              <label htmlFor="endTime" className="form-label fw-semibold">
                 End Time*
               </label>
               <Field
@@ -144,18 +135,31 @@ const BookRoomForm = () => {
                 className="form-control"
                 disabled={values.allDay}
               />
+              <Field
+              type="checkbox"
+              name="allDay"
+              id="allDay"
+              className="form-check-input mt-2"
+              onChange={() => setFieldValue("allDay", !values.allDay)}
+            />
+            <label htmlFor="allDay" className="form-check-label fw-semibold mt-2">
+              All Day
+            </label>
+
               <ErrorMessage
                 name="endTime"
                 component="div"
                 className="text-danger"
               />
+
             </div>
+        
           </div>
 
           {/* Rest of the form fields (title, description, team name, submit button) */}
           <div className="row">
             <div className="col-md-4 mb-3">
-              <label htmlFor="title" className="form-label">
+              <label htmlFor="title" className="form-label fw-semibold">
                 Meeting Title*
               </label>
               <Field
@@ -171,7 +175,7 @@ const BookRoomForm = () => {
               />
             </div>
             <div className="col-md-4 mb-3">
-              <label htmlFor="description" className="form-label">
+              <label htmlFor="description" className="form-label fw-semibold">
                 Description
               </label>
               <Field
@@ -188,7 +192,7 @@ const BookRoomForm = () => {
             </div>
 
             <div className="col-md-4 mb-3">
-              <label htmlFor="teamName" className="form-label">
+              <label htmlFor="teamName" className="form-label fw-semibold">
                 Team Name
               </label>
               <Field
@@ -205,7 +209,7 @@ const BookRoomForm = () => {
             </div>
           </div>
 
-          <div className="col-md-4 mb-3 form-check">
+          {/* <div className="col-md-4 mb-3 form-check">
             <Field
               type="checkbox"
               name="allDay"
@@ -213,10 +217,10 @@ const BookRoomForm = () => {
               className="form-check-input"
               onChange={() => setFieldValue("allDay", !values.allDay)}
             />
-            <label htmlFor="allDay" className="form-check-label">
+            <label htmlFor="allDay" className="form-check-label fw-semibold">
               All Day
             </label>
-          </div>
+          </div> */}
 
           <div className="w-80 text-center">
             <button

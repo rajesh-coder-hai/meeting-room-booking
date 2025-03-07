@@ -13,30 +13,29 @@ passport.use(new MicrosoftStrategy({
     authorizationURL: `https://login.microsoftonline.com/${process.env.MICROSOFT_TENANT_ID}/oauth2/v2.0/authorize`, // ✅ Correct
     tokenURL: `https://login.microsoftonline.com/${process.env.MICROSOFT_TENANT_ID}/oauth2/v2.0/token`
 },
-async (accessToken, refreshToken, profile, done) => {
-    try {
-        console.log('**** Profile:', profile, accessToken, refreshToken);
-        
-        // 1. Find or Create User
-        let user = await User.findOne({ microsoftId: profile.id });
-user['token'] = accessToken
-        if (!user) {
-            user = new User({
-                microsoftId: profile.id,
-                displayName: profile.displayName,
-                email: profile.emails && profile.emails.length > 0 ? profile.emails[0].value : null, // Handle potential missing email
-                // Add other fields as needed from the profile
-            });
-            await user.save();
+    async (accessToken, refreshToken, profile, done) => {
+        try {
+            // console.log('**** Profile:', profile, accessToken, refreshToken);
+
+            // 1. Find or Create User
+            let user = await User.findOne({ microsoftId: profile.id });
+            // user['token'] = accessToken
+            if (!user) {
+                user = new User({
+                    microsoftId: profile.id,
+                    displayName: profile.displayName,
+                    email: profile.emails && profile.emails.length > 0 ? profile.emails[0].value : null, // Handle potential missing email
+                });
+                await user.save();
+            }
+
+            // 2. Call `done` to signal success
+            return done(null, user); // Pass the user object to the next middleware i.e callback url
+
+        } catch (err) {
+            return done(err); // Pass any errors to Passport
         }
-
-        // 2. Call `done` to signal success
-        return done(null, user); // Pass the user object to the next middleware
-
-    } catch (err) {
-        return done(err); // Pass any errors to Passport
-    }
-}));
+    }));
 
 // Serialize user (store user ID in session)
 passport.serializeUser((user, done) => {
