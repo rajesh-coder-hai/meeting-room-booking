@@ -5,10 +5,11 @@ import Bookings from "./pages/Bookings";
 import Rooms from "./pages/Rooms";
 import Navbar from "./components/Navbar";
 import { Provider } from "react-redux";
-
+import './styles/customStyle.css'
 import store  from "./store";
 import { ToastContainer } from "react-toastify";
 import 'react-toastify/dist/ReactToastify.css'; // Import the CSS!
+import NotFound from "./pages/NotFound";
 const App = () => {
   return (
     <Provider store={store}>
@@ -28,8 +29,10 @@ const App = () => {
         <Navbar />
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/login" element={<Home />} />
           <Route path="/bookings" element={<Bookings />} />
           <Route path="/rooms" element={<Rooms />} />
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </Router>
     </Provider>

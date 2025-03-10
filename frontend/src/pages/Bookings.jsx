@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from "react";
+import React, { useRef, useEffect, useState, useCallback } from "react";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
@@ -7,6 +7,7 @@ import moment from "moment";
 import Modal from "react-bootstrap/Modal";
 import BookRoomForm from "../components/BookRoomForm";
 import {
+  cancelBooking,
   fetchRooms,
   getRoomBookingsByDateRange,
   updateBooking,
@@ -15,7 +16,6 @@ import { useSearchParams } from "react-router-dom";
 import { getRandomColor, randomGradient } from "../helper";
 import { useDispatch } from "react-redux";
 import { showErrorToast, showSuccessToast } from "../store/slices/sharedSlice";
-
 
 const Bookings = () => {
   const dispatch = useDispatch();
@@ -26,64 +26,21 @@ const Bookings = () => {
   const [rooms, setRooms] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [modalEvent, setModalEvent] = useState(null);
-  const [events, setEvents] = useState([
-    {
-      title: "All Day Meeting",
-      allDay: true,
-      start: moment().add(1, "days").toISOString(),
-      end: moment().add(1, "days").toISOString(),
-      extendedProps: {
-        description: "Important all day meeting",
-      },
-    },
-    {
-      title: "Project Review",
-      start: moment()
-        .add(2, "days")
-        .set({ hour: 10, minute: 0, second: 0 })
-        .format(),
-      end: moment()
-        .add(2, "days")
-        .set({ hour: 12, minute: 0, second: 0 })
-        .format(),
-      extendedProps: {
-        description: "Review project progress",
-      },
-    },
-    {
-      title: "Team Lunch",
-      start: moment()
-        .add(3, "days")
-        .set({ hour: 12, minute: 30, second: 0 })
-        .format(),
-      end: moment()
-        .add(3, "days")
-        .set({ hour: 13, minute: 30, second: 0 })
-        .format(),
-      extendedProps: {
-        description: "Team lunch at restaurant",
-      },
-    },
-    {
-      title: "Overlapping Meeting",
-      start: moment()
-        .add(2, "days")
-        .set({ hour: 11, minute: 0, second: 0 })
-        .format(),
-      end: moment()
-        .add(2, "days")
-        .set({ hour: 13, minute: 0, second: 0 })
-        .format(),
-      extendedProps: {
-        description: "This meeting overlaps with Project Review",
-      },
-    },
-  ]);
+  const [events, setEvents] = useState([]);
   const [currentView, setCurrentView] = useState("timeGridWeek");
+  const [timeRange, setTimeRange] = useState({ start: null, end: null });
 
-  const handleViewChange = (arg) => {
+  const handleViewChange = useCallback((arg) => {
     setCurrentView(arg.view.type);
-  };
+    setTimeRange((prev) => {
+      const newRange = {
+        start: moment(arg.start).format(),
+        end: moment(arg.end).format(),
+      };
+      return prev.start !== newRange.start || prev.end !== newRange.end ? newRange : prev;
+    });
+  }, []);
+  
 
   useEffect(() => {
     if (calendarRef.current) {
@@ -93,15 +50,16 @@ const Bookings = () => {
   }, [events]);
 
   useEffect(() => {
-    if (currentView) {
-      getRoomAvailabilityByDateRange(currentView, currentMeetingRom);
+    if (timeRange) {
+      getRoomBookingsByDateRangeAPIcall(
+        currentMeetingRom,
+        timeRange.start,
+        timeRange.end
+      );
     }
-  }, [currentView, currentMeetingRom]);
+  }, [timeRange]);
 
-  async function getRoomAvailabilityByDateRange(
-    timeFilter = currentView,
-    roomId
-  ) {
+  function getRoomAvailabilityByDateRange(roomId, timeFilter = currentView) {
     try {
       // Define start and end dates
       let startDate, endDate;
@@ -129,6 +87,19 @@ const Bookings = () => {
           break;
       }
 
+      getRoomBookingsByDateRangeAPIcall(roomId, startDate, endDate);
+    } catch (error) {
+      dispatch(
+        showErrorToast(error.response.data.error || "An error occurred!")
+      );
+      console.log("Error from getMeetingRoomAvailability", error);
+    }
+  }
+
+  async function getRoomBookingsByDateRangeAPIcall(roomId, startDate, endDate) {
+    try {
+      console.log("bhei dekh");
+      // return
       // Fetch the room bookings based on the calculated date range
       const { data: availability } = await getRoomBookingsByDateRange(
         roomId,
@@ -139,19 +110,19 @@ const Bookings = () => {
         ...event,
         backgroundColor: moment(event.start).isBefore(moment().startOf("day"))
           ? "gray"
-          : getRandomColor(),
+          : "green", //getRandomColor()
         start: moment(event.start).toISOString(),
         end: moment(event.end).toISOString(),
       }));
       // Update state with retrieved events
+      // console.log("modifiedEvents", modifiedEvents);
+
       setEvents(modifiedEvents);
     } catch (error) {
-      dispatch(
-        showErrorToast(error.response.data.error || "An error occurred!")
-      );
       console.log("Error from getMeetingRoomAvailability", error);
     }
   }
+  //dropdown for all meeting room
   const getAllMeetingRooms = async () => {
     try {
       const { data: rooms } = await fetchRooms();
@@ -165,12 +136,16 @@ const Bookings = () => {
     getAllMeetingRooms();
   }, []);
 
-  useEffect(() => {}, [currentMeetingRom]);
-
   const handleEventClick = (info) => {
     console.log("Event clicked:", info.event);
 
-    setModalEvent(info.event);
+    const meetingData = {
+      ...info.event._def.extendedProps,
+      title: info.event._def.title,
+      allDay: info.event._def.allDay,
+    };
+    console.log("Event clicked after:", meetingData);
+    setModalEvent(meetingData);
     setShowModal(true);
   };
 
@@ -180,6 +155,10 @@ const Bookings = () => {
 
   const handleEventDrop = async (info) => {
     try {
+      if (new Date(info.event.start) < new Date()) {
+        return info.revert(); // Prevent moving to past
+      }
+
       const { _id: meetingId } = info.event.extendedProps;
 
       const updatedEvents = events.map((event) => {
@@ -211,32 +190,35 @@ const Bookings = () => {
     }
   };
 
-  const handleEventResize = async(info) => {
+  const handleEventResize = async (info) => {
     console.log("Event resized:", info.event);
-    
-    const { _id: meetingId } = info.event.extendedProps;
+
     try {
-       const updatedEvents = events.map((event) => {
-      if (event.title === info.event.title) {
-        return {
-          ...event,
-          start: moment(info.event.start).format(),
-          end: moment(info.event.end).format(),
-        };
+      if (new Date(info.event.end) <= new Date(info.event.start)) {
+        return info.revert(); // Prevent shrinking end time before start
       }
-      return event;
-    });
-    const myUpdatedEvent = updatedEvents.find(
-      (event) => event._id === meetingId
-    );
-    console.log("myUpdatedEvent", myUpdatedEvent);
-    
-    await updateBooking(meetingId, {
-      ...myUpdatedEvent,
-    });
 
-    setEvents(updatedEvents);
+      const { _id: meetingId } = info.event.extendedProps;
+      const updatedEvents = events.map((event) => {
+        if (event.title === info.event.title) {
+          return {
+            ...event,
+            start: moment(info.event.start).format(),
+            end: moment(info.event.end).format(),
+          };
+        }
+        return event;
+      });
+      const myUpdatedEvent = updatedEvents.find(
+        (event) => event._id === meetingId
+      );
+      console.log("myUpdatedEvent", myUpdatedEvent);
 
+      await updateBooking(meetingId, {
+        ...myUpdatedEvent,
+      });
+
+      setEvents(updatedEvents);
     } catch (error) {
       info.revert();
       console.log("Error from handleEventResize", error);
@@ -244,15 +226,42 @@ const Bookings = () => {
         showErrorToast(error.response.data.error || "An error occurred!")
       );
     }
-   
   };
 
+  const handleNewBookingSchedule = (newBookingSchedule) => {
+    console.log("New booking schedule");
+    const modifiedEvents = [...events, newBookingSchedule];
+    setEvents(modifiedEvents);
+  };
+
+  const handleCancelMeeting = async (meetingId) => {
+    try {
+      await cancelBooking(meetingId);
+      setShowModal(false);
+      const modifiedEvents = events.filter((event) => event._id !== meetingId);
+      console.log("modifiedEvents handleCancelMeeting", modifiedEvents);
+
+      setEvents(modifiedEvents);
+      dispatch(showSuccessToast("Booking cancelled successfully!"));
+    } catch (error) {
+      console.log("Error from handleCancelMeeting", error);
+      dispatch(
+        showErrorToast(error.response.data.error || "An error occurred!")
+      );
+    }
+  };
   return (
     <div style={{ padding: "20px" }}>
       <BookRoomForm
         rooms={rooms}
         currentRoomId={currentMeetingRom}
-        handleRoomChange={(newRoom) => setCurrentMeetingRoom(newRoom)}
+        handleRoomChange={(newRoom) => {
+          console.log('handleRoomChange called----', newRoom);
+          
+          getRoomAvailabilityByDateRange(null, newRoom);
+          setCurrentMeetingRoom(newRoom);
+        }}
+        handleNewBookingSchedule={handleNewBookingSchedule}
       />
 
       <div style={{ height: "300px" }}>
@@ -268,23 +277,35 @@ const Bookings = () => {
           }}
           editable={true}
           eventOverlap={false}
+          validRange={{
+            start: moment().startOf("day").format(),
+          }}
           eventDrop={handleEventDrop}
           eventResize={handleEventResize}
           events={events} // Initial events
           eventClick={handleEventClick} // Add event click handler
           eventContent={(arg) => (
-            <div onClick={() => console.log("printing a event", arg.event)}>
-              <b>{arg.event.title}</b> <br />
-              {arg.event.allDay ? (
-                "All Day"
-              ) : (
-                <i>
+            <div
+              className="p-1 rounded-md shadow-md text-white text-xs overflow-hidden"
+              style={{
+                backgroundColor: arg.event.backgroundColor || "#007bff", // Default color
+                borderLeft: "4px solid #fff",
+                height: "100%", // Ensures event height is fixed
+                display: "flex",
+                flexDirection: "column",
+              }}
+            >
+              <b className="truncate">{arg.event.title}</b>
+              {!arg.event.allDay && (
+                <span className="text-[10px]">
                   {moment(arg.event.start).format("h:mm a")} -{" "}
                   {moment(arg.event.end).format("h:mm a")}
-                </i>
+                </span>
               )}
               {arg.event.extendedProps.description && (
-                <p>{arg.event.extendedProps.description}</p>
+                <p className="text-[10px] truncate">
+                  {arg.event.extendedProps.description}
+                </p>
               )}
             </div>
           )}
@@ -299,8 +320,7 @@ const Bookings = () => {
           {modalEvent && (
             <>
               <p>
-                <strong>Description:</strong>{" "}
-                {modalEvent.extendedProps.description}
+                <strong>Description:</strong> {modalEvent.description || "N/A"}
               </p>
               {modalEvent.allDay ? (
                 <p>
@@ -322,6 +342,12 @@ const Bookings = () => {
           )}
         </Modal.Body>
         <Modal.Footer>
+          <button
+            className="btn btn-outline-danger"
+            onClick={() => handleCancelMeeting(modalEvent._id)}
+          >
+            Cancel Meeting
+          </button>
           <button className="btn btn-secondary" onClick={handleCloseModal}>
             Close
           </button>

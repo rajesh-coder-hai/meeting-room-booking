@@ -6,7 +6,7 @@ import moment from "moment";
 import { useDispatch } from "react-redux";
 import {  showErrorToast, showSuccessToast } from "../store/slices/sharedSlice";
 
-const BookRoomForm = ({rooms, handleRoomChange, currentRoomId}) => {
+const BookRoomForm = ({rooms, handleRoomChange, currentRoomId, handleNewBookingSchedule}) => {
  const dispatch = useDispatch();
   const handleSubmit = async (values) => {
     try {
@@ -19,7 +19,8 @@ const BookRoomForm = ({rooms, handleRoomChange, currentRoomId}) => {
           description: values.description || "",
         },
       };
-      await bookRoom(payload);
+     const {data} = await bookRoom(payload);
+     handleNewBookingSchedule(data);
       dispatch(showSuccessToast('Room booked successfully!'));
     } catch (error) {
             console.error("Booking Error:", error);
@@ -117,6 +118,13 @@ const BookRoomForm = ({rooms, handleRoomChange, currentRoomId}) => {
                 type="datetime-local"
                 name="startTime"
                 className="form-control"
+                min={new Date().toISOString().slice(0, 16)} // Restrict past dates
+                onChange={(e) => {
+                  setFieldValue("start", e.target.value);
+                  if (values.end && new Date(e.target.value) >= new Date(values.end)) {
+                    setFieldValue("end", ""); // Reset end date if invalid
+                  }
+                }}
               />
               <ErrorMessage
                 name="startTime"
@@ -134,6 +142,7 @@ const BookRoomForm = ({rooms, handleRoomChange, currentRoomId}) => {
                 name="endTime"
                 className="form-control"
                 disabled={values.allDay}
+                min={values.start || new Date().toISOString().slice(0, 16)} // End must be after start
               />
               <Field
               type="checkbox"

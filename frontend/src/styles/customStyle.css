@@ -1,0 +1,98 @@
+/* Root Theme Variables */
+:root {
+    --fc-primary: #0d6efd;  /* Bootstrap Primary Blue */
+    --fc-secondary: #6c757d; /* Bootstrap Secondary */
+    --fc-success: #198754;  /* Bootstrap Success Green */
+    --fc-danger: #dc3545;   /* Bootstrap Red */
+    --fc-warning: #ffc107;  /* Bootstrap Yellow */
+    --fc-info: #0dcaf0;     /* Bootstrap Cyan */
+    --fc-light: #f8f9fa;    /* Bootstrap Light Gray */
+    --fc-dark: #212529;     /* Bootstrap Dark */
+}
+
+/* FullCalendar Toolbar Styles */
+.fc-toolbar {
+    /* background-color: var(--fc-primary); */
+    color: white;
+    padding: 10px;
+    border-radius: 5px;
+}
+
+.fc-toolbar-title {
+    color: white;
+}
+
+/* FullCalendar Button Styling */
+.fc-button {
+    background-color: var(--fc-primary) !important;
+    border-color: var(--fc-primary) !important;
+    color: white !important;
+}
+
+.fc-button:hover {
+    background-color: var(--fc-dark) !important;
+}
+
+/* Calendar Grid and Events */
+.fc .fc-daygrid-event {
+    background-color: var(--fc-primary) !important;
+    border: none;
+    color: white !important;
+    font-weight: bold;
+}
+
+/* Change Event Colors Based on Type */
+.fc-event.success { background-color: var(--fc-success) !important; }
+.fc-event.warning { background-color: var(--fc-warning) !important; }
+.fc-event.danger { background-color: var(--fc-danger) !important; }
+.fc-event.info { background-color: var(--fc-info) !important; }
+
+/* Calendar Background */
+.fc-daygrid-day {
+    background-color: var(--fc-light);
+    border: 1px solid var(--fc-dark);
+}
+
+/* Current Day Highlight */
+.fc-day-today {
+    background-color: rgba(13, 110, 253, 0.2) !important;
+    border: 2px solid var(--fc-primary) !important;
+}
+
+
+/* FullCalendar Active Button Styling */
+.fc-button-active {
+    background-color: var(--fc-dark) !important; /* Darker shade */
+    border-color: var(--fc-primary) !important;
+    color: white !important;
+    font-weight: bold;
+}
+
+/* Hover Effect */
+.fc-button:hover {
+    background-color: var(--fc-secondary) !important;
+    border-color: var(--fc-secondary) !important;
+    color: white !important;
+}
+
+/* Customize Selected View Button */
+.fc-button-group .fc-button-active {
+    background-color: var(--fc-primary) !important;
+    border-color: var(--fc-dark) !important;
+    color: white !important;
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Override Default FullCalendar Button Styles */
+.fc .fc-button {
+    background-color: var(--fc-primary) !important;
+    border-color: var(--fc-primary) !important;
+    color: white !important;
+    text-transform: uppercase;
+}
+
+/* Change color on click */
+.fc .fc-button:active {
+    background-color: var(--fc-danger) !important; /* Red for click effect */
+    border-color: var(--fc-dark) !important;
+}

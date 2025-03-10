@@ -18,7 +18,7 @@ const Navbar = () => {
   }, []);
 
   return (
-    <nav className="navbar navbar-expand-lg navbar-light bg-light">
+    <nav className="navbar navbar-expand-lg navbar-dark bg-primary">
       <div className="container-fluid">
         <Link className="navbar-brand" to="/">
           <i className="bi bi-house-door"></i> Meeting Room Booking
@@ -34,18 +34,13 @@ const Navbar = () => {
         >
           <span className="navbar-toggler-icon"></span>
         </button>
-        <div className="collapse navbar-collapse" id="navbarNav">
-          <ul className="navbar-nav">
+        <div className="collapse navbar-collapse justify-content-end" id="navbarNav">
+          <ul className="navbar-nav gap-2">
             <li className="nav-item">
-              <Link className="nav-link" to="/rooms">
+              <Link className="nav-link text-white" to="/rooms">
                 <i className="bi bi-grid"></i> Rooms
               </Link>
             </li>
-            {/* <li className="nav-item">
-              <Link className="nav-link" to="/bookings">
-                <i className="bi bi-calendar-check"></i> Bookings
-              </Link>
-            </li> */}
             <li className="nav-item">
               <a
                 href={
@@ -55,7 +50,7 @@ const Navbar = () => {
                         import.meta.env.VITE_API_BASE_URL
                       }/auth/microsoft?token=${localStorage.getItem("token")}`
                 }
-                className="btn btn-link nav-link"
+                className="btn btn-link nav-link text-white"
                 onClick={() => {
                   if (isLoggedIn) {
                     localStorage.clear(); // Clear all localStorage data on logout
