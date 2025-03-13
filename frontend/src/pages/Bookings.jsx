@@ -237,17 +237,16 @@ const Bookings = () => {
   const handleCancelMeeting = async (meetingId) => {
     try {
       await cancelBooking(meetingId);
-      setShowModal(false);
       const modifiedEvents = events.filter((event) => event._id !== meetingId);
-      console.log("modifiedEvents handleCancelMeeting", modifiedEvents);
-
       setEvents(modifiedEvents);
       dispatch(showSuccessToast("Booking cancelled successfully!"));
     } catch (error) {
       console.log("Error from handleCancelMeeting", error);
       dispatch(
-        showErrorToast(error.response.data.error || "An error occurred!")
+        showErrorToast(error.response.data.message || "An error occurred!")
       );
+    } finally{
+      setShowModal(false);
     }
   };
   return (
@@ -277,9 +276,9 @@ const Bookings = () => {
           }}
           editable={true}
           eventOverlap={false}
-          validRange={{
-            start: moment().startOf("day").format(),
-          }}
+          // validRange={{
+          //   start: moment().startOf("day").format(),
+          // }}
           eventDrop={handleEventDrop}
           eventResize={handleEventResize}
           events={events} // Initial events

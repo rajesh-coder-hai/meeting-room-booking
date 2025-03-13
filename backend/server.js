@@ -2,11 +2,12 @@ const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
 const session = require('express-session');
-const passport = require('./config/passport'); // Import Passport configuration
-const authRoutes = require('./routes/auth'); // Import auth routes
-// Import routes
-const roomRoutes = require('./routes/roomRoutes'); // Ensure this is correctly imported
+const passport = require('./config/passport'); 
+const authRoutes = require('./routes/auth'); 
+const roomRoutes = require('./routes/roomRoutes');
 // const userRoutes = require('./routes/userRoutes');
+const msGraphUtil = require('./routes/msGraphutil');
+
 const bookingRoutes = require('./routes/bookingRoutes');
 const { protect } = require('./middlewares/authMiddleware');
 
@@ -37,6 +38,8 @@ app.use('/auth', authRoutes);
 // Use routes correctly
 app.use('/api/rooms', roomRoutes);
 // app.use('/api/users', userRoutes);
+app.use('/api/ms-graph-util', msGraphUtil);
+
 app.use('/api/bookings',protect, bookingRoutes);
 
 // Start the server
