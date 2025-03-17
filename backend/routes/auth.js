@@ -13,17 +13,15 @@ const express = require('express');
         //  successRedirect: 'http://localhost:3000/rooms'
      }),
      (req, res) => {
-        const userPayload = {
-            id: req.user.id,
-            email: req.user.email,
-            name: req.user.displayName,
-        };
-    
-        // Generate JWT token
-        const token = jwt.sign(userPayload, process.env.JWT_SECRET, { expiresIn: '1h' });
-    
-        // Send token to frontend
-        res.redirect(`${process.env.CLIENT_URL}/rooms?token=${token}`);
+        if (!req.user) {
+            return res.status(401).json({ error: "Authentication failed" });
+        }
+        const token = jwt.sign(
+            { userId: req.user.microsoftId, accessToken: req.user.accessToken },  // Payload
+            process.env.JWT_SECRET,   // Secret key
+            { expiresIn: '1d' }       // Expiry time
+        );
+       res.redirect(`${process.env.CLIENT_URL}/rooms?token=${token}&refreshToken=${req.user.refreshToken}`);
      }
  );
  

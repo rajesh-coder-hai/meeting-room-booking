@@ -8,9 +8,11 @@ const Rooms = () => {
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
         const token = urlParams.get("token");
+        const refreshToken = urlParams.get("refreshToken");
 
         if (token) {
             localStorage.setItem("token", token); // Store token
+            sessionStorage.setItem("refreshToken", refreshToken); // Store refresh token
             window.history.replaceState({}, document.title, "/rooms"); 
         }
   },[])

@@ -11,7 +11,11 @@ To do list:
 9. add a footer
 10. in the nav, align the buttons to right and change nav color to bootstrap primary blue
 
-
+11. create user profile from graph api
+12. send meeting room invite from the app.
+13. sync user calender - check and plan the possibility
+14. CRUD for meeting booking
+15. recurring invite
 
 =========== FUTURE=============
-1. use ms graph api to find user to send meeting invite, and send email.
+1. use ms graph api to find user to send meeting invite, and send email. -  done

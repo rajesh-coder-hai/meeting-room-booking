@@ -38,7 +38,7 @@ app.use('/auth', authRoutes);
 // Use routes correctly
 app.use('/api/rooms', roomRoutes);
 // app.use('/api/users', userRoutes);
-app.use('/api/ms-graph-util', msGraphUtil);
+app.use('/api/ms-graph-util',protect, msGraphUtil);
 
 app.use('/api/bookings',protect, bookingRoutes);
 

@@ -9,28 +9,45 @@ passport.use(new MicrosoftStrategy({
     clientID: process.env.MICROSOFT_CLIENT_ID,
     clientSecret: process.env.MICROSOFT_CLIENT_VALUE,
     callbackURL: "http://localhost:5000/auth/microsoft/callback", // Match your Redirect URI
-    scope: ["user.read"],
+    scope: [
+        "openid",
+        "profile",
+        "email",
+        // "offline_access",
+        "User.Read",
+        "User.ReadBasic.All",
+        // "User.Read.All",
+        "Calendars.ReadWrite",
+        "Calendars.Read.Shared",
+    ],
     authorizationURL: `https://login.microsoftonline.com/${process.env.MICROSOFT_TENANT_ID}/oauth2/v2.0/authorize`, // ✅ Correct
     tokenURL: `https://login.microsoftonline.com/${process.env.MICROSOFT_TENANT_ID}/oauth2/v2.0/token`
 },
     async (accessToken, refreshToken, profile, done) => {
         try {
-            console.log('**** Profile:', { microsoftId: profile.id,
+            console.log('**** Profile:', {
+                microsoftId: profile.id,
                 displayName: profile.displayName,
-                email: profile.emails && profile.emails.length > 0 ? profile.emails[0].value : null,});
+                email: profile.emails && profile.emails.length > 0 ? profile.emails[0].value : null,
+            });
 
             // 1. Find or Create User
             let user = await User.findOne({ microsoftId: profile.id });
-             
-            if (!user || user===null) {
+
+            if (!user || user === null) {
                 user = new User({
                     microsoftId: profile.id,
                     displayName: profile.displayName,
                     email: profile.emails && profile.emails.length > 0 ? profile.emails[0].value : null, // Handle potential missing email
+                    refreshToken: refreshToken, // Save refresh token for later use
                 });
                 await user.save();
+            } else {
+                user.refreshToken = refreshToken;
+                await user.save();
             }
-
+            // Attach tokens to user object
+            user.accessToken = accessToken;
             // 2. Call `done` to signal success
             return done(null, user); // Pass the user object to the next middleware i.e callback url
 
