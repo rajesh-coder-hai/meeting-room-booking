@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Home from "./pages/Home";
 import Bookings from "./pages/Bookings";
 import Rooms from "./pages/Rooms";
-import Navbar from "./components/Navbar";
+import AppHeader from "./components/AppHeader";
 import { Provider } from "react-redux";
 import './styles/customStyle.css'
 import store  from "./store";
@@ -26,7 +26,7 @@ const App = () => {
           pauseOnHover
           theme="light"
         />
-        <Navbar />
+        <AppHeader />
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Home />} />

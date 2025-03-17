@@ -74,7 +74,7 @@ const BookRoomForm = ({rooms, handleRoomChange, currentRoomId, handleNewBookingS
         dirty,
         handleSubmit,
       }) => (
-        <Form className="container my-5">
+        <Form >
           <div className="row">
             <div className="col-md-4 mb-3">
               <label htmlFor="roomId" className="form-label fw-semibold">

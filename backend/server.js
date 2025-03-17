@@ -5,7 +5,7 @@ const session = require('express-session');
 const passport = require('./config/passport'); 
 const authRoutes = require('./routes/auth'); 
 const roomRoutes = require('./routes/roomRoutes');
-// const userRoutes = require('./routes/userRoutes');
+const userRoutes = require('./routes/userRoutes');
 const msGraphUtil = require('./routes/msGraphutil');
 
 const bookingRoutes = require('./routes/bookingRoutes');
@@ -37,7 +37,7 @@ app.use('/auth', authRoutes);
 
 // Use routes correctly
 app.use('/api/rooms', roomRoutes);
-// app.use('/api/users', userRoutes);
+app.use('/api/users',protect, userRoutes);
 app.use('/api/ms-graph-util',protect, msGraphUtil);
 
 app.use('/api/bookings',protect, bookingRoutes);

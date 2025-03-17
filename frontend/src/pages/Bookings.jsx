@@ -16,6 +16,7 @@ import { useSearchParams } from "react-router-dom";
 import { getRandomColor, randomGradient } from "../helper";
 import { useDispatch } from "react-redux";
 import { showErrorToast, showSuccessToast } from "../store/slices/sharedSlice";
+import SearchUser from "../components/SearchUser";
 
 const Bookings = () => {
   const dispatch = useDispatch();
@@ -250,7 +251,8 @@ const Bookings = () => {
     }
   };
   return (
-    <div style={{ padding: "20px" }}>
+    <div style={{ padding: "20px" }} className="container my-5">
+      <SearchUser />
       <BookRoomForm
         rooms={rooms}
         currentRoomId={currentMeetingRom}
