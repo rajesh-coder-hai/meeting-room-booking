@@ -19,6 +19,9 @@ passport.use(new MicrosoftStrategy({
         // "User.Read.All",
         "Calendars.ReadWrite",
         "Calendars.Read.Shared",
+        "Chat.create",
+        "Chat.ReadWrite",
+        "ChatMessage.Send",
     ],
     authorizationURL: `https://login.microsoftonline.com/${process.env.MICROSOFT_TENANT_ID}/oauth2/v2.0/authorize`, // ✅ Correct
     tokenURL: `https://login.microsoftonline.com/${process.env.MICROSOFT_TENANT_ID}/oauth2/v2.0/token`

@@ -55,3 +55,5 @@ export const cancelBooking = (id) => API.delete(`/bookings/${id}`);
 export const updateBooking = (id, data) => API.put(`/bookings/${id}`, data);
 
 export const searchUsers = (query) => API.post(`/ms-graph-util/search-user?query=${query}`);
+
+export const userProfile = () => API.get('/users/profile');
