@@ -28,35 +28,36 @@ const App = () => {
     }
   };
   useEffect(() => {
+    if (!token) {
+      return;
+    }
     getUserProfile();
   }, [token]);
 
   return (
-
-      <Router>
-        <ToastContainer
-          position="top-right"
-          autoClose={5000}
-          hideProgressBar={false}
-          newestOnTop={false}
-          closeOnClick
-          rtl={false}
-          pauseOnFocusLoss
-          draggable
-          pauseOnHover
-          theme="light"
-        />
-        {/* <AppHeader /> */}
-        <Navbar />
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/login" element={<Home />} />
-          <Route path="/bookings" element={<Bookings />} />
-          <Route path="/rooms" element={<RoomManager />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </Router>
- 
+    <Router>
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+      />
+      {/* <AppHeader /> */}
+      <Navbar />
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/login" element={<Home />} />
+        <Route path="/bookings" element={<Bookings />} />
+        <Route path="/rooms" element={<RoomManager />} />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </Router>
   );
 };
 

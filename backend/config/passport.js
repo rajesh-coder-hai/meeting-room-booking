@@ -29,6 +29,7 @@ passport.use(new MicrosoftStrategy({
     async (accessToken, refreshToken, profile, done) => {
         try {
             console.log('**** Profile:', {
+                accessToken, refreshToken,
                 microsoftId: profile.id,
                 displayName: profile.displayName,
                 email: profile.emails && profile.emails.length > 0 ? profile.emails[0].value : null,
@@ -36,6 +37,10 @@ passport.use(new MicrosoftStrategy({
 
             // 1. Find or Create User
             let user = await User.findOne({ microsoftId: profile.id });
+
+            console.log('**** user db:', {
+                ...user
+            });
 
             if (!user || user === null) {
                 user = new User({

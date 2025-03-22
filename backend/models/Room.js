@@ -29,6 +29,10 @@ const roomSchema = new mongoose.Schema({
   extensionNumber: {
     type: String,
     required: false,
+  },
+  description: {
+    type: String,
+    required: false,
   }
 }, {
   // Enforcing uniqueness on roomName + floorNo combination

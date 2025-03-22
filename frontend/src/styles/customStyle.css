@@ -10,6 +10,20 @@
     --fc-dark: #212529;     /* Bootstrap Dark */
 }
 
+body{
+    overflow: hidden;
+}
+
+.formWithCalender{
+    /* padding: 20px; */
+        height: calc(100vh - 124px);
+        /* border: 1px dashed; */
+        overflow-y: auto;
+        padding: 0px 80px;
+        width: 1420px !important;
+        margin: 0 auto;
+}
+
 /* FullCalendar Toolbar Styles */
 .fc-toolbar {
     /* background-color: var(--fc-primary); */

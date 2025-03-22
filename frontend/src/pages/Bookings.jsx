@@ -38,10 +38,11 @@ const Bookings = () => {
         start: moment(arg.start).format(),
         end: moment(arg.end).format(),
       };
-      return prev.start !== newRange.start || prev.end !== newRange.end ? newRange : prev;
+      return prev.start !== newRange.start || prev.end !== newRange.end
+        ? newRange
+        : prev;
     });
   }, []);
-  
 
   useEffect(() => {
     if (calendarRef.current) {
@@ -246,19 +247,19 @@ const Bookings = () => {
       dispatch(
         showErrorToast(error.response.data.message || "An error occurred!")
       );
-    } finally{
+    } finally {
       setShowModal(false);
     }
   };
   return (
-    <div style={{ padding: "20px" }} className="container my-5">
+    <div style={{ padding: "20px" }} className="formWithCalender my-5">
       <SearchUser />
       <BookRoomForm
         rooms={rooms}
         currentRoomId={currentMeetingRom}
         handleRoomChange={(newRoom) => {
-          console.log('handleRoomChange called----', newRoom);
-          
+          console.log("handleRoomChange called----", newRoom);
+
           getRoomAvailabilityByDateRange(null, newRoom);
           setCurrentMeetingRoom(newRoom);
         }}

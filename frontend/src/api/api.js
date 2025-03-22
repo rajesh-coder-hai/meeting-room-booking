@@ -30,9 +30,9 @@ API.interceptors.response.use(
       // const navigate = useNavigate(); // Get the navigate function
       // navigate('/');
 
-       // Optionally, display a message to the user
-       // You could use a state variable in your component, a toast notification, etc.
-       console.log('Authentication failed. Redirecting to home page.');
+      // Optionally, display a message to the user
+      // You could use a state variable in your component, a toast notification, etc.
+      console.log('Authentication failed. Redirecting to home page.');
     }
     return Promise.reject(error); // Important: Re-reject the error for further handling
   }
@@ -40,7 +40,11 @@ API.interceptors.response.use(
 
 
 // Rooms
-export const fetchRooms = () => API.get('/rooms');
+export const fetchRooms = (params) => API.get(`/rooms${params ?? ''}`);
+
+export const createRoom = (data) => API.post('/rooms', data);
+export const updateRoom = (data) => API.put(`/rooms/${data._id}`, data);
+export const deleteRoom = (id) => API.delete(`/rooms/${id}`);
 
 
 // Booking
@@ -53,6 +57,8 @@ export const fetchBookings = (startDate, endDate) =>
 export const cancelBooking = (id) => API.delete(`/bookings/${id}`);
 
 export const updateBooking = (id, data) => API.put(`/bookings/${id}`, data);
+
+// Users
 
 export const searchUsers = (query) => API.post(`/ms-graph-util/search-user?query=${query}`);
 

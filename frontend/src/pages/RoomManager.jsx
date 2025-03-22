@@ -1,15 +1,18 @@
-import React, { useEffect, useState } from "react";
-import { fetchRooms } from "../api/api";
+import React, { useCallback, useEffect, useState } from "react";
+import { createRoom, fetchRooms, updateRoom, deleteRoom } from "../api/api";
 import { RoomCard } from "../components/RoomCard";
 import { useNavigate } from "react-router-dom";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import RoomForm from "./RoomForm";
 import { Modal, Button } from "react-bootstrap";
 import { faPlus } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { showSuccessToast } from "../store/slices/sharedSlice";
+import DebouncedSearch from "../components/DebouncedSearch";
 
 const RoomManager = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const { isAdmin } = useSelector((state) => state.shared);
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -41,26 +44,38 @@ const RoomManager = () => {
     setShowModal(true); // Show the modal
   };
 
-  // const handleCreateRoom = () => {
-  //     setSelectedRoom(null); // Clear any selected room
-  //     setIsCreatingNew(true);  // Set to create mode
-  //     setShowModal(true);       // Show the modal
-  // };
-
   const handleRoomSubmit = async (values, isCreatingNew) => {
     try {
-      console.log("values", values);
-      // if (isCreatingNew) {
-      //     const newRoom = await createRoom(values);
-      //     setRooms([...rooms, newRoom]);
-      // } else {
-      //     const updatedRoom = await updateRoom(values);
-      //     setRooms(rooms.map(r => r._id === updatedRoom._id ? updatedRoom : r));
-      // }
+      console.log("values", { values, isCreatingNew });
+      if (isCreatingNew) {
+        const { data: newRoom } = await createRoom(values);
+
+        setRooms([...rooms, newRoom]);
+      } else {
+        const { data: updatedRoom } = await updateRoom(values);
+        setRooms(
+          rooms.map((r) => (r._id === updatedRoom._id ? updatedRoom : r))
+        );
+      }
       setShowModal(false); // Hide the modal after success
-      // Optionally, show a success toast
+      dispatch(
+        showSuccessToast(
+          `Room ${isCreatingNew ? "created" : "updated"} successfully!`
+        )
+      );
     } catch (error) {
       console.error("Error submitting room:", error);
+      // Optionally, show an error toast
+    }
+  };
+
+  const handleDeleteRoom = async (iRoom) => {
+    try {
+      await deleteRoom(iRoom._id);
+      setRooms(rooms.filter((room) => room._id !== iRoom._id));
+      dispatch(showSuccessToast("Room removed successfully!"));
+    } catch (error) {
+      console.error("Error deleting room:", error);
       // Optionally, show an error toast
     }
   };
@@ -70,20 +85,37 @@ const RoomManager = () => {
     setSelectedRoom(null); // Clear selected room when closing
   };
 
-  console.log("selectedRoom", selectedRoom);
+  const handleSearchMeetingRoom = useCallback(async (searchTerm) => {
+    console.log("Searching for:", searchTerm);
+    // Perform your search logic here (e.g., API call)
+    try {
+      const { data: rooms } = await fetchRooms(`?search=${searchTerm}`);
+      console.log("rooms handleSearchMeetingRoom", rooms);
+
+      setRooms(rooms);
+    } catch (error) {
+      console.log("Error while searching meeting room:", error);
+    }
+  }, []);
 
   return (
-    <div className="container mt-5">
-     {isAdmin && ( <button
-        className="btn btn-primary w-25 d-block mb-3 mx-auto"
-        onClick={() => {
-          setSelectedRoom(null);
-          setShowModal(true);
-        }}
-      >
-        <FontAwesomeIcon icon={faPlus} className="me-2" />
-        {"Create New Room"}
-      </button>)}
+    <div className="formWithCalender mt-5">
+      {isAdmin && (
+        <button
+          className="btn btn-primary w-25 d-block mb-3 mx-auto"
+          onClick={() => {
+            setSelectedRoom(null);
+            setShowModal(true);
+          }}
+        >
+          <FontAwesomeIcon icon={faPlus} className="me-2" />
+          {"Create New Room"}
+        </button>
+      )}
+
+      <div className="mb-3">
+        <DebouncedSearch onSearch={handleSearchMeetingRoom} delay={300} />
+      </div>
 
       <div className="row">
         {rooms.map((room, index) => (
@@ -93,6 +125,7 @@ const RoomManager = () => {
             isAdmin={isAdmin}
             onClick={(room) => navigate(`/bookings?roomId=${room._id}`)}
             onEdit={handleEditRoom}
+            onDelete={handleDeleteRoom}
           />
         ))}
 
