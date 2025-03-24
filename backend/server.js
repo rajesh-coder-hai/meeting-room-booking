@@ -2,13 +2,13 @@ const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
 const session = require('express-session');
-const passport = require('./config/passport'); 
-const authRoutes = require('./routes/auth'); 
+const passport = require('./config/passport');
+const authRoutes = require('./routes/auth');
 const roomRoutes = require('./routes/roomRoutes');
 const userRoutes = require('./routes/userRoutes');
 const msGraphUtil = require('./routes/msGraphutil');
-
 const bookingRoutes = require('./routes/bookingRoutes');
+const configRoutes = require('./routes/configRoutes');
 const { protect } = require('./middlewares/authMiddleware');
 
 require('dotenv').config();
@@ -37,10 +37,13 @@ app.use('/auth', authRoutes);
 
 // Use routes correctly
 app.use('/api/rooms', roomRoutes);
-app.use('/api/users',protect, userRoutes);
-app.use('/api/ms-graph-util',protect, msGraphUtil);
+app.use('/api/users', protect, userRoutes);
+app.use('/api/ms-graph-util', protect, msGraphUtil);
 
-app.use('/api/bookings',protect, bookingRoutes);
+app.use('/api/bookings', protect, bookingRoutes);
+
+//common config
+app.use('/api/configs', protect, configRoutes);
 
 // Start the server
 const PORT = process.env.PORT || 5000;

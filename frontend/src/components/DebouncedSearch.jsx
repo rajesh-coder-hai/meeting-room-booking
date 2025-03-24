@@ -28,7 +28,7 @@ const DebouncedSearch = ({ onSearch, delay = 500 }) => {
   return (
     <input
       type="search"
-      className="form-control"
+      className="form-control w-50 mx-auto"
       id="searchRoom"
       aria-describedby="search meeting room"
       placeholder="Search Meeting Room..."

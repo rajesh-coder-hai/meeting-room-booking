@@ -18,8 +18,8 @@ export default function SearchUser() {
     if (!query) return;
     setLoading(true);
     try {
-      const {data} = await searchUsers(query);
-    //   const data = await response.json();
+      const { data } = await searchUsers(query);
+      //   const data = await response.json();
       if (data.length) {
         setSearchResult(
           data.map((user) => ({
@@ -45,7 +45,7 @@ export default function SearchUser() {
 
   return (
     <Autocomplete
-    className="w-full mb-4"
+      className="w-50 mb-4"
       multiple
       id="checkboxes-ms-user"
       options={searchResult}

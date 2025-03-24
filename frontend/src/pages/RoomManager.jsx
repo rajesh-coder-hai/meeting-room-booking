@@ -9,6 +9,7 @@ import { faPlus } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { showSuccessToast } from "../store/slices/sharedSlice";
 import DebouncedSearch from "../components/DebouncedSearch";
+import Filters from "../components/Filters";
 
 const RoomManager = () => {
   const navigate = useNavigate();
@@ -98,8 +99,21 @@ const RoomManager = () => {
     }
   }, []);
 
+  const handleFilterChange = useCallback(async (filterData) => {
+    try {
+      console.log("filterData", filterData);
+
+      const { data: rooms } = await fetchRooms(
+        `?filter=${JSON.stringify(filterData)}`
+      );
+      setRooms(rooms);
+    } catch (error) {
+      console.log("Error while filtering meeting room:", error);
+    }
+  }, []);
+
   return (
-    <div className="formWithCalender mt-5">
+    <div className="container mt-5">
       {isAdmin && (
         <button
           className="btn btn-primary w-25 d-block mb-3 mx-auto"
@@ -117,34 +131,44 @@ const RoomManager = () => {
         <DebouncedSearch onSearch={handleSearchMeetingRoom} delay={300} />
       </div>
 
-      <div className="row">
-        {rooms.map((room, index) => (
-          <RoomCard
-            key={index}
-            room={room}
-            isAdmin={isAdmin}
-            onClick={(room) => navigate(`/bookings?roomId=${room._id}`)}
-            onEdit={handleEditRoom}
-            onDelete={handleDeleteRoom}
-          />
-        ))}
+      <div className="d-flex gap-3">
+        <Filters filterName="roomFilter" onFilterChange={handleFilterChange} />
+        {/* room card container */}
+        <div
+          className="row"
+          style={{
+            height: "calc(100vh - 230px)",
+            overflowY: "scroll",
+          }}
+        >
+          {rooms.map((room, index) => (
+            <RoomCard
+              key={index}
+              room={room}
+              isAdmin={isAdmin}
+              onClick={(room) => navigate(`/bookings?roomId=${room._id}`)}
+              onEdit={handleEditRoom}
+              onDelete={handleDeleteRoom}
+            />
+          ))}
 
-        {showModal && (
-          <Modal show={showModal} onHide={handleCloseModal} centered>
-            <Modal.Header closeButton>
-              <Modal.Title>
-                {!selectedRoom ? "Create New Room" : "Edit Room"}
-              </Modal.Title>
-            </Modal.Header>
-            <Modal.Body>
-              <RoomForm
-                room={selectedRoom}
-                onSubmit={handleRoomSubmit}
-                onCancel={handleCloseModal}
-              />
-            </Modal.Body>
-          </Modal>
-        )}
+          {showModal && (
+            <Modal show={showModal} onHide={handleCloseModal} centered>
+              <Modal.Header closeButton>
+                <Modal.Title>
+                  {!selectedRoom ? "Create New Room" : "Edit Room"}
+                </Modal.Title>
+              </Modal.Header>
+              <Modal.Body>
+                <RoomForm
+                  room={selectedRoom}
+                  onSubmit={handleRoomSubmit}
+                  onCancel={handleCloseModal}
+                />
+              </Modal.Body>
+            </Modal>
+          )}
+        </div>
       </div>
     </div>
   );

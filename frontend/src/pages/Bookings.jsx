@@ -17,6 +17,8 @@ import { getRandomColor, randomGradient } from "../helper";
 import { useDispatch } from "react-redux";
 import { showErrorToast, showSuccessToast } from "../store/slices/sharedSlice";
 import SearchUser from "../components/SearchUser";
+import Accordion from "react-bootstrap/Accordion";
+import Favorites from "../components/Favourite";
 
 const Bookings = () => {
   const dispatch = useDispatch();
@@ -252,19 +254,31 @@ const Bookings = () => {
     }
   };
   return (
-    <div style={{ padding: "20px" }} className="formWithCalender my-5">
-      <SearchUser />
-      <BookRoomForm
-        rooms={rooms}
-        currentRoomId={currentMeetingRom}
-        handleRoomChange={(newRoom) => {
-          console.log("handleRoomChange called----", newRoom);
+    <div style={{ padding: "20px" }} className="container my-5">
+      <Accordion defaultActiveKey="0">
+        <Accordion.Item eventKey="0">
+          <Accordion.Header>Send Meeting Invite</Accordion.Header>
+          <Accordion.Body>
+            {/* Search User from Microsoft */}
+            <div className="d-flex justify-content-center align-items-center mb-3 gap-3">
+              <SearchUser />
+              <Favorites />
+            </div>
 
-          getRoomAvailabilityByDateRange(null, newRoom);
-          setCurrentMeetingRoom(newRoom);
-        }}
-        handleNewBookingSchedule={handleNewBookingSchedule}
-      />
+            <BookRoomForm
+              rooms={rooms}
+              currentRoomId={currentMeetingRom}
+              handleRoomChange={(newRoom) => {
+                console.log("handleRoomChange called----", newRoom);
+
+                getRoomAvailabilityByDateRange(null, newRoom);
+                setCurrentMeetingRoom(newRoom);
+              }}
+              handleNewBookingSchedule={handleNewBookingSchedule}
+            />
+          </Accordion.Body>
+        </Accordion.Item>
+      </Accordion>
 
       <div style={{ height: "300px" }}>
         <FullCalendar

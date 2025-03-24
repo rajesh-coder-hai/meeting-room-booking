@@ -1,32 +1,60 @@
+const CoreConfiguration = require('../models/CoreConfiguration');
 const Room = require('../models/Room');
 
 // Get all rooms
 exports.getRooms = async (req, res) => {
   try {
-    //if id in params, return room with that id
+    // If id is provided, return room with that id
     if (req.params.id) {
-      const
-        room = await Room.findById(req.params.id);
+      const room = await Room.findById(req.params.id);
       if (!room) return res.status(404).json({ message: 'Room not found' });
       return res.json(room);
     }
-    //if search filter in query, return rooms that match the filter
+
+    // If search query exists, return rooms matching the search string
     if (req.query.search) {
       const rooms = await Room.find({ roomName: { $regex: req.query.search, $options: 'i' } });
       return res.json(rooms);
     }
-    //if floorNo in query, return rooms on that floor
-    if (req.query.floorNo) {
-      const rooms = await Room.find
-        ({ floorNo: req.query.floorNo });
-      return res.json(rooms);
+
+    let query = {};
+
+    // If filter object exists, apply filters
+    if (req.query.filter) {
+      try {
+        const filter = JSON.parse(req.query.filter);
+
+        if (filter.projector !== undefined) {
+          query.projector = filter.projector;
+        }
+
+        if (filter.tvScreen !== undefined) {
+          query.tvScreen = filter.tvScreen;
+        }
+
+        if (filter.whiteboard !== undefined) {
+          query.whiteboard = filter.whiteboard;
+        }
+
+        if (Array.isArray(filter.capacity) && filter.capacity.length === 2) {
+          query.capacity = { $gte: filter.capacity[0], $lte: filter.capacity[1] };
+        }
+
+        if (Array.isArray(filter.floorNo) && filter.floorNo.length > 0) {
+          query.floorNo = { $in: filter.floorNo };
+        }
+      } catch (error) {
+        return res.status(400).json({ message: 'Invalid filter format', error });
+      }
     }
-    const rooms = await Room.find();
+
+    const rooms = await Room.find(query);
     res.json(rooms);
   } catch (error) {
     res.status(400).json({ message: 'Error fetching rooms', error });
   }
 };
+
 
 // Add a new room (for admins or room managers)
 exports.addRoom = async (req, res) => {
@@ -122,3 +150,60 @@ exports.deleteRoom = async (req, res) => {
     res.status(400).json({ message: 'Error deleting room', error });
   }
 };
+
+exports.filterDataForRoom = async (req, res) => {
+  try {
+    const configName = req.query.configName || 'roomFilter'; // Default to "roomFilter"
+
+    const filterConfig = await CoreConfiguration.findOne({ name: configName, active: true });
+
+    if (!filterConfig) {
+      return res.status(404).json({ message: 'Filter configuration not found or inactive' });
+    }
+
+    if (filterConfig.type !== 'filter') {
+      return res.status(400).json({ message: 'Invalid configuration type. Expected "filter".' });
+    }
+
+    const configData = filterConfig.configData;
+    const query = {};
+
+    // --- Build the query based on configData ---
+
+    // Boolean Filters
+    if (configData.projector && configData.projector.value !== null) {
+      query.projector = configData.projector.value;
+    }
+    if (configData.tvScreen && configData.tvScreen.value !== null) {
+      query.tvScreen = configData.tvScreen.value;
+    }
+    if (configData.whiteboard && configData.whiteboard.value !== null) {
+      query.whiteboard = configData.whiteboard.value;
+    }
+
+    // Floor Filter
+    if (configData.floorNo && configData.floorNo.value && configData.floorNo.value.length > 0) {
+      query.floorNo = { $in: configData.floorNo.value };
+    }
+
+    // Capacity Filter
+    if (configData.capacity && configData.capacity.value) {
+      if (configData.capacity.value[0] > 0 || configData.capacity.value[1] < Infinity) {
+        query.capacity = {};
+        if (configData.capacity.value[0] > 0) {
+          query.capacity.$gte = configData.capacity.value[0];
+        }
+        if (configData.capacity.value[1] < Infinity) {
+          query.capacity.$lte = configData.capacity.value[1];
+        }
+      }
+    }
+
+    const rooms = await Room.find(query);
+    res.status(200).json(rooms);
+
+  } catch (error) {
+    console.error('Error fetching filtered rooms:', error);
+    res.status(500).json({ message: 'Failed to fetch filtered rooms', error: error.message });
+  }
+};    

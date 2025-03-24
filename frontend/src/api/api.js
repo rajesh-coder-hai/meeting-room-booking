@@ -63,3 +63,13 @@ export const updateBooking = (id, data) => API.put(`/bookings/${id}`, data);
 export const searchUsers = (query) => API.post(`/ms-graph-util/search-user?query=${query}`);
 
 export const userProfile = () => API.get('/users/profile');
+
+//CRUD for favourite
+
+export const createFavourite = (data) => API.post('/favourites', data);
+export const updateFavourite = (id, data) => API.put(`/favourites/${id}`, data);
+export const deleteFavourite = (id) => API.delete(`/favourites/${id}`);
+export const getFavorites = () => API.get('/favourites');
+
+//get filter for room
+export const getFilterConfigForRoom = (filterName) => API.get(`/configs?name=${filterName}`);
