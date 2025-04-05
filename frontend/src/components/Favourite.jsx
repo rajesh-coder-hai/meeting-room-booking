@@ -2,6 +2,7 @@
 import AddIcon from "@mui/icons-material/Add";
 import CancelIcon from "@mui/icons-material/Cancel";
 import DeleteIcon from "@mui/icons-material/Delete";
+import StarBorderIcon from "@mui/icons-material/StarBorder";
 import EditIcon from "@mui/icons-material/Edit";
 import PersonRemoveIcon from "@mui/icons-material/PersonRemove";
 import SaveIcon from "@mui/icons-material/Save";
@@ -19,11 +20,13 @@ import {
   IconButton,
   List,
   ListItem,
-  ListItemSecondaryAction,
   ListItemText,
+  Stack, // Import Stack for layout
+  Divider, // Import Divider if you want it between items
   Modal,
   TextField,
   Typography,
+  ListItemSecondaryAction,
 } from "@mui/material";
 import axios from "axios";
 import React, { useEffect, useState } from "react";
@@ -31,26 +34,30 @@ import { useDispatch } from "react-redux";
 import {
   createFavourite,
   deleteFavourite,
-  getFavorites,
+  getAllFavorites,
   updateFavourite,
 } from "../api/api"; // Your API functions
 import { showErrorToast, showSuccessToast } from "../store/slices/sharedSlice";
 // import UserSearch from "./UserSearch"; // Assuming you have this component
 
-function Favorites() {
+function Favorites({ attendees = [], oSelectedAttendees = [] }) {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [favoriteName, setFavoriteName] = useState("");
   const [favorites, setFavorites] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [selectedFavorite, setSelectedFavorite] = useState(null); // For editing/deleting
+  const [selectedFavorite, setSelectedFavorite] = useState(attendees); // For editing/deleting
   const [selectedUsers, setSelectedUsers] = useState([]); // Users for the *current* (new or edited) favorite list
   const [searchTerm, setSearchTerm] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false); // For confirmation
 
   const dispatch = useDispatch();
+
+  useEffect(() => {
+    fetchFavorites();
+  }, []);
 
   const handleAddClick = () => {
     setSelectedUsers([]); // Clear selected users when creating a new list
@@ -110,7 +117,7 @@ function Favorites() {
     setLoading(true);
     setError(null); // Clear previous errors
     try {
-      const response = await getFavorites();
+      const response = await getAllFavorites();
       setFavorites(response.data);
     } catch (err) {
       setError(err.response?.data?.message || "Failed to load favorites.");
@@ -130,14 +137,14 @@ function Favorites() {
       return;
     }
 
-    if (selectedUsers.length === 0) {
+    if (attendees.length === 0) {
       dispatch(showErrorToast("Please select users for the favorite list."));
       return;
     }
     try {
       const favoriteData = {
         name: favoriteName,
-        attendees: selectedUsers,
+        attendees: attendees,
       };
 
       const response = await createFavourite(favoriteData);
@@ -224,25 +231,119 @@ function Favorites() {
     setSelectedUsers(favorite.attendees); // Pre-fill selected users. VERY IMPORTANT
     setShowEditModal(true); // Open the Edit Modal
   };
+  // / Example dimensions - adjust as needed
+  const listHeight = "300px"; // e.g., fixed height
+  const listWidth = "100%"; // e.g., take full width of its container
 
   return (
     <Box sx={{ p: 1 }}>
-      <Typography variant="subtitle1" gutterBottom>
+      <Typography
+        variant="subtitle1"
+        gutterBottom
+        component="div"
+        sx={{ textAlign: "center", mb: 2, fontWeight: "bold" }}
+      >
         Manage Favorites Attendees
       </Typography>
 
-      <Box sx={{ display: "flex", justifyContent: "center", mb: 2 }}>
+      <Box sx={{ display: "flex", justifyContent: "center", gap: 2 }}>
         <Fab
           color="primary"
           aria-label="add"
           onClick={handleAddClick}
           sx={{ mr: 2 }}
+          disabled={attendees.length === 0} // Disable if no users are selected
         >
-          <AddIcon />
+          <StarBorderIcon />
         </Fab>
-        <Fab color="secondary" aria-label="edit" onClick={handleEditClick}>
+        {/* commenting below functionality for now */}
+        {/* <Fab color="secondary" aria-label="edit" onClick={handleEditClick}>
           <EditIcon />
-        </Fab>
+        </Fab> */}
+        {!loading && !error && (
+          <List
+            sx={{
+              minWidth: 350,
+              width: listWidth, // Set the desired width
+              height: listHeight, // Set the desired height
+              overflowY: "auto", // ALWAYS show vertical scrollbar
+              // overflowY: 'auto', // Show scrollbar ONLY when content overflows (alternative)
+              // Optional: Add borders or background for better visual separation
+              border: "1px solid",
+              borderColor: "divider", // Use theme's divider color
+              borderRadius: 1, // Slight rounding of corners
+              bgcolor: "background.paper", // Use theme's paper background color
+            }}
+          >
+            {favorites.map(
+              (
+                favorite,
+                index // Added index for divider check
+              ) => (
+                <React.Fragment key={favorite._id}>
+                  {" "}
+                  {/* Use Fragment for key */}
+                  <ListItem
+                    // Remove button prop if the main item shouldn't be clickable,
+                    // or keep it if you want hover/focus styles.
+                    // You could wrap ListItemText in ListItemButton if you want text clickable.
+                    // button
+                    // onClick={() => handleSelectFavoriteForEdit(favorite)} // Removed redundant main click
+
+                    // Use the secondaryAction prop
+                    secondaryAction={
+                      <Stack direction="row" spacing={1}>
+                        {" "}
+                        {/* Use Stack for horizontal layout and spacing */}
+                        <IconButton
+                          edge="end" // Helps with alignment consistency
+                          aria-label={`Select users from ${favorite.name}`} // More descriptive label
+                          onClick={(e) => {
+                            e.stopPropagation(); // Prevent potential ListItem click if it exists
+                            oSelectedAttendees(favorite.attendees); // Use the corrected prop name
+                          }}
+                        >
+                          <AddIcon />
+                        </IconButton>
+                        <IconButton
+                          edge="end"
+                          aria-label={`Edit ${favorite.name}`} // More descriptive label
+                          onClick={(e) => {
+                            e.stopPropagation(); // Prevent potential ListItem click
+                            handleSelectFavoriteForEdit(favorite);
+                          }}
+                        >
+                          <EditIcon />
+                        </IconButton>
+                      </Stack>
+                    }
+                  >
+                    {/* Primary text content */}
+                    <ListItemText
+                      primary={favorite.name}
+                      secondary={`${favorite.attendees.length} users`}
+                      // If you want the text itself to be clickable for edit:
+                      // onClick={() => handleSelectFavoriteForEdit(favorite)}
+                      // sx={{ cursor: 'pointer' }} // Add pointer cursor if text is clickable
+                      // Apply SX prop for truncation styles
+                      sx={{
+                        "& .MuiListItemText-primary": {
+                          // Target the inner primary text element
+                          overflow: "hidden", // Hide the overflowing text
+                          textOverflow: "ellipsis", // Add ellipsis (...)
+                          whiteSpace: "nowrap", // Keep the text on a single line
+                          display: "block", // Ensure it behaves like a block for overflow
+                        },
+                      }}
+                    />
+                  </ListItem>
+                  {/* Add Divider manually if needed between items */}
+                  {index < favorites.length - 1 && <Divider component="li" />}
+                </React.Fragment>
+              )
+            )}
+          </List>
+        )}
       </Box>
 
       {/* Add Favorite Modal */}
@@ -287,6 +388,7 @@ function Favorites() {
               variant="contained"
               color="primary"
               onClick={handleCreateFavorite}
+              disabled={attendees.length === 0} // Disable if no users are selected
             >
               Create
             </Button>
@@ -410,32 +512,6 @@ function Favorites() {
       {/* Display Favorites */}
       {loading && <CircularProgress />}
       {error && <Alert severity="error">{error}</Alert>}
-      {!loading && !error && (
-        <List>
-          {favorites.map((favorite) => (
-            <ListItem
-              key={favorite._id}
-              button
-              divider
-              onClick={() => handleSelectFavoriteForEdit(favorite)}
-            >
-              <ListItemText
-                primary={favorite.name}
-                secondary={`${favorite.attendees.length} users`}
-              />
-              <ListItemSecondaryAction>
-                <IconButton
-                  edge="end"
-                  aria-label="edit"
-                  onClick={() => handleSelectFavoriteForEdit(favorite)}
-                >
-                  <EditIcon />
-                </IconButton>
-              </ListItemSecondaryAction>
-            </ListItem>
-          ))}
-        </List>
-      )}
     </Box>
   );
 }

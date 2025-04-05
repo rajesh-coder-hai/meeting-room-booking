@@ -9,6 +9,7 @@ const userRoutes = require('./routes/userRoutes');
 const msGraphUtil = require('./routes/msGraphutil');
 const bookingRoutes = require('./routes/bookingRoutes');
 const configRoutes = require('./routes/configRoutes');
+const favoriteRoutes = require('./routes/favoriteRoutes');
 const { protect } = require('./middlewares/authMiddleware');
 
 require('dotenv').config();
@@ -44,6 +45,10 @@ app.use('/api/bookings', protect, bookingRoutes);
 
 //common config
 app.use('/api/configs', protect, configRoutes);
+
+
+// Mount the favorite routes - requests to /api/favorites will be handled here
+app.use('/api/favorites', protect, favoriteRoutes);
 
 // Start the server
 const PORT = process.env.PORT || 5000;

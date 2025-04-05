@@ -1,4 +1,5 @@
 const CoreConfiguration = require('../models/CoreConfiguration');
+const handleApiError = require('../utils/errorHandler');
 
 exports.createConfig = async (req, res) => {
     try {
@@ -7,7 +8,7 @@ exports.createConfig = async (req, res) => {
         await newConfig.save();
         res.status(201).json(newConfig);
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        handleApiError(error, res, "Error creating configuration");
     }
 };
 
@@ -24,7 +25,7 @@ exports.viewConfig = async (req, res) => {
         }
         res.json(config);
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        handleApiError(error, res, "Error fetching configuration");
     }
 };
 
@@ -41,7 +42,7 @@ exports.updateConfigById = async (req, res) => {
         }
         res.json(updatedConfig);
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        handleApiError(error, res, "error updating configuration");
     }
 };
 
@@ -53,6 +54,6 @@ exports.deleteConfigById = async (req, res) => {
         }
         res.json({ message: 'Configuration deleted successfully' });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        handleApiError(error, res, "error deleting configuration");
     }
 };

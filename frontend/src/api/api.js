@@ -66,10 +66,11 @@ export const userProfile = () => API.get('/users/profile');
 
 //CRUD for favourite
 
-export const createFavourite = (data) => API.post('/favourites', data);
-export const updateFavourite = (id, data) => API.put(`/favourites/${id}`, data);
-export const deleteFavourite = (id) => API.delete(`/favourites/${id}`);
-export const getFavorites = () => API.get('/favourites');
+export const createFavourite = (data) => API.post('/favorites', data);
+export const updateFavourite = (id, data) => API.put(`/favorites/${id}`, data);
+export const deleteFavourite = (id) => API.delete(`/favorites/${id}`);
+export const getAllFavorites = () => API.get('/favorites');
+export const getFavoritesById = (id) => API.get(`/favorites/${id}`);
 
 //get filter for room
 export const getFilterConfigForRoom = (filterName) => API.get(`/configs?name=${filterName}`);

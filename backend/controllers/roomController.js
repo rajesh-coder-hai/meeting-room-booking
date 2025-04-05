@@ -1,5 +1,6 @@
 const CoreConfiguration = require('../models/CoreConfiguration');
 const Room = require('../models/Room');
+const handleApiError = require('../utils/errorHandler');
 
 // Get all rooms
 exports.getRooms = async (req, res) => {
@@ -51,7 +52,7 @@ exports.getRooms = async (req, res) => {
     const rooms = await Room.find(query);
     res.json(rooms);
   } catch (error) {
-    res.status(400).json({ message: 'Error fetching rooms', error });
+    handleApiError(error, res, "error fetching rooms");
   }
 };
 
@@ -76,7 +77,7 @@ exports.addRoom = async (req, res) => {
     });
     res.status(201).json(room);
   } catch (error) {
-    res.status(400).json({ message: 'Error adding room', error });
+    handleApiError(error, res, "error creating room");
   }
 };
 
@@ -102,7 +103,7 @@ exports.bulkUploadRooms = async (req, res) => {
     await Room.insertMany(roomsArray,);
     res.status(201).json({ message: 'Rooms uploaded successfully' });
   } catch (error) {
-    res.status(500).json({ message: 'Error uploading rooms', error });
+    handleApiError(error, res, "error uploading bulk rooms");
   }
 };
 
@@ -135,7 +136,7 @@ exports.updateRoom = async (req, res) => {
     if (!room) return res.status(404).json({ message: 'Room not found' });
     res.json(room);
   } catch (error) {
-    res.status(400).json({ message: 'Error updating room', error });
+    handleApiError(error, res, "error updating room");
   }
 };
 
@@ -147,7 +148,7 @@ exports.deleteRoom = async (req, res) => {
     if (!room) return res.status(404).json({ message: 'Room not found' });
     res.json({ message: 'Room deleted successfully' });
   } catch (error) {
-    res.status(400).json({ message: 'Error deleting room', error });
+    handleApiError(error, res, "error deleting room");
   }
 };
 
@@ -204,6 +205,6 @@ exports.filterDataForRoom = async (req, res) => {
 
   } catch (error) {
     console.error('Error fetching filtered rooms:', error);
-    res.status(500).json({ message: 'Failed to fetch filtered rooms', error: error.message });
+    handleApiError(error, res, "error fetching filtered rooms");
   }
 };    

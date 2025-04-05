@@ -1,30 +1,50 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useCallback, useState, useEffect } from "react";
 import { Autocomplete } from "@mui/material";
-import TextField from "@mui/material/TextField";
 import Checkbox from "@mui/material/Checkbox";
+import TextField from "@mui/material/TextField";
+import {
+  Chip,
+  Avatar,
+  ListItem,
+  ListItemAvatar,
+  ListItemText,
+} from "@mui/material";
 import { debounce } from "lodash";
 import { searchUsers } from "../api/api";
 
-const icon = <Checkbox style={{ marginRight: 8 }} />;
-const checkedIcon = <Checkbox checked style={{ marginRight: 8 }} />;
-
-export default function SearchUser() {
+export default function SearchUser({ options, value, onChange }) {
+  const [selectedValues, setSelectedValues] = useState(value || []); // Initialize with value if passed
   const [searchText, setSearchText] = useState("");
   const [searchResult, setSearchResult] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  // Fetch users from Microsoft Graph API
+  // Update selectedValues if `value` prop changes
+  useEffect(() => {
+    if (value) {
+      setSelectedValues(value);
+    }
+  }, [value]);
+
+  // Handle change in selection
+  const handleSelectionChange = (event, newSelection) => {
+    setSelectedValues(newSelection);
+    onChange(newSelection); // Pass updated selection to parent component
+  };
+
+  // Fetch users from the API
   const fetchUsers = async (query) => {
     if (!query) return;
     setLoading(true);
     try {
       const { data } = await searchUsers(query);
-      //   const data = await response.json();
       if (data.length) {
         setSearchResult(
           data.map((user) => ({
             displayName: user.displayName,
             mail: user.mail,
+            id: user.id,
+            firstName: user.displayName.split(" ")[0], // Assume first name is first word
+            lastName: user.displayName.split(" ")[1], // Assume last name is second word
           }))
         );
       }
@@ -34,7 +54,7 @@ export default function SearchUser() {
     setLoading(false);
   };
 
-  // Debounce API call to prevent excessive requests
+  // Debounced API call to prevent excessive requests
   const debouncedFetchUsers = useCallback(debounce(fetchUsers, 500), []);
 
   // Handle input change
@@ -43,38 +63,55 @@ export default function SearchUser() {
     debouncedFetchUsers(value);
   };
 
+  // Get user's initials from display name
+  const getInitials = (name) => {
+    const nameParts = name.split(" ");
+    const initials =
+      nameParts.length >= 2
+        ? nameParts[0][0] + nameParts[1][0]
+        : nameParts[0][0];
+    return initials.toUpperCase();
+  };
+
   return (
     <Autocomplete
-      className="w-50 mb-4"
       multiple
-      id="checkboxes-ms-user"
+      id="multi-select-dropdown"
       options={searchResult}
+      limitTags={5}
+      minWidth="380px"
+      fullWidth
       getOptionLabel={(option) => `${option.displayName} (${option.mail})`}
+      value={selectedValues}
+      onChange={handleSelectionChange}
       disableCloseOnSelect
       loading={loading}
-      noOptionsText="No users found"
       onInputChange={handleInputChange}
-      renderOption={(props, option, { selected }) => {
-        const { key, ...optionProps } = props;
-        return (
-          <li key={key} {...optionProps}>
-            <Checkbox
-              icon={icon}
-              checkedIcon={checkedIcon}
-              checked={selected}
-            />
-            {option.displayName} ({option.mail})
-          </li>
-        );
-      }}
+      noOptionsText="No users found"
       renderInput={(params) => (
-        <TextField
-          {...params}
-          label="Search attendees"
-          placeholder="Enter name"
-          variant="standard"
-        />
+        <TextField {...params} label="Search Users" placeholder="Search" />
       )}
+      isOptionEqualToValue={(option, value) => option.id === value.id}
+      renderOption={(props, option, { selected }) => (
+        <ListItem {...props} button selected={selected}>
+          <ListItemAvatar>
+            <Avatar>{getInitials(option.displayName)}</Avatar>{" "}
+            {/* Display initials */}
+          </ListItemAvatar>
+          <ListItemText primary={`${option.displayName} (${option.mail})`} />
+          <Checkbox checked={selected} />
+        </ListItem>
+      )}
+      renderTags={(value, getTagProps) =>
+        value.map((option, index) => (
+          <Chip
+            label={option.displayName}
+            {...getTagProps({ index })}
+            style={{ margin: 2 }}
+            key={option.id}
+          />
+        ))
+      }
     />
   );
 }

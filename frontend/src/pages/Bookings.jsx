@@ -1,24 +1,22 @@
-import React, { useRef, useEffect, useState, useCallback } from "react";
-import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
-import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
+import FullCalendar from "@fullcalendar/react";
+import timeGridPlugin from "@fullcalendar/timegrid";
 import moment from "moment";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import Accordion from "react-bootstrap/Accordion";
 import Modal from "react-bootstrap/Modal";
-import BookRoomForm from "../components/BookRoomForm";
+import { useDispatch } from "react-redux";
+import { useSearchParams } from "react-router-dom";
 import {
   cancelBooking,
   fetchRooms,
   getRoomBookingsByDateRange,
   updateBooking,
 } from "../api/api";
-import { useSearchParams } from "react-router-dom";
-import { getRandomColor, randomGradient } from "../helper";
-import { useDispatch } from "react-redux";
+import BookRoomForm from "../components/BookRoomForm";
 import { showErrorToast, showSuccessToast } from "../store/slices/sharedSlice";
-import SearchUser from "../components/SearchUser";
-import Accordion from "react-bootstrap/Accordion";
-import Favorites from "../components/Favourite";
+import MeetingLinks from "../components/MeetingLinks";
 
 const Bookings = () => {
   const dispatch = useDispatch();
@@ -31,6 +29,7 @@ const Bookings = () => {
   const [modalEvent, setModalEvent] = useState(null);
   const [events, setEvents] = useState([]);
   const [currentView, setCurrentView] = useState("timeGridWeek");
+  const [isAccordionOpen, setIsAccordionOpen] = useState(0); //1 is closed, 0 is open
   const [timeRange, setTimeRange] = useState({ start: null, end: null });
 
   const handleViewChange = useCallback((arg) => {
@@ -102,8 +101,6 @@ const Bookings = () => {
 
   async function getRoomBookingsByDateRangeAPIcall(roomId, startDate, endDate) {
     try {
-      console.log("bhei dekh");
-      // return
       // Fetch the room bookings based on the calculated date range
       const { data: availability } = await getRoomBookingsByDateRange(
         roomId,
@@ -236,6 +233,7 @@ const Bookings = () => {
     console.log("New booking schedule");
     const modifiedEvents = [...events, newBookingSchedule];
     setEvents(modifiedEvents);
+    setIsAccordionOpen(1);
   };
 
   const handleCancelMeeting = async (meetingId) => {
@@ -253,25 +251,20 @@ const Bookings = () => {
       setShowModal(false);
     }
   };
+
   return (
-    <div style={{ padding: "20px" }} className="container my-5">
-      <Accordion defaultActiveKey="0">
-        <Accordion.Item eventKey="0">
+    <div style={{ height: "88vh" }} className="container my-5 overflow-auto">
+      <Accordion defaultActiveKey={isAccordionOpen}>
+        <Accordion.Item eventKey={isAccordionOpen}>
           <Accordion.Header>Send Meeting Invite</Accordion.Header>
           <Accordion.Body>
-            {/* Search User from Microsoft */}
-            <div className="d-flex justify-content-center align-items-center mb-3 gap-3">
-              <SearchUser />
-              <Favorites />
-            </div>
-
             <BookRoomForm
               rooms={rooms}
               currentRoomId={currentMeetingRom}
               handleRoomChange={(newRoom) => {
                 console.log("handleRoomChange called----", newRoom);
 
-                getRoomAvailabilityByDateRange(null, newRoom);
+                getRoomAvailabilityByDateRange(newRoom);
                 setCurrentMeetingRoom(newRoom);
               }}
               handleNewBookingSchedule={handleNewBookingSchedule}
@@ -279,8 +272,13 @@ const Bookings = () => {
           </Accordion.Body>
         </Accordion.Item>
       </Accordion>
-
-      <div style={{ height: "300px" }}>
+      <div className="d-flex justify-content-between align-items-center my-3">
+        <MeetingLinks
+          outlookWebLink="https://outlook.office365.com/owa/?itemid=AAMkADcyZmEzOGUxLTc0ZjAtNGY1NS05N2FjLTkzNDk3MjdmMWU0NwBGAAAAAACvhkybgr90QbBJPThUik2xBwBV2iBcEjw5QoGjiqMFpzBQAAAAAAENAABV2iBcEjw5QoGjiqMFpzBQAADHxJmMAAA%3D&exvsurl=1&path=/calendar/item"
+          teamsJoinUrl="https://teams.microsoft.com/l/meetup-join/19%3ameeting_NmZlYWQyNzMtYWE2OS00YWI2LWEzMTMtODhjMjM2MjMwZmJi%40thread.v2/0?context=%7b%22Tid%22%3a%229810f93f-68e8-41cb-92b6-fc7e27d15e83%22%2c%22Oid%22%3a%2274769a65-e308-44da-9ad0-1c281d19d7f2%22%7d"
+        />
+      </div>
+      <div className="mt-4">
         <FullCalendar
           ref={calendarRef}
           plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}

@@ -56,6 +56,7 @@ passport.use(new MicrosoftStrategy({
             }
             // Attach tokens to user object
             user.accessToken = accessToken;
+
             // 2. Call `done` to signal success
             return done(null, user); // Pass the user object to the next middleware i.e callback url
 

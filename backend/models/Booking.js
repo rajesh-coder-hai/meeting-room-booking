@@ -38,6 +38,10 @@ const bookingSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    attendees: {
+      type: mongoose.Schema.Types.Array,
+      required: true,
+    },
   },
   { timestamps: true } // Adds createdAt & updatedAt fields
 );

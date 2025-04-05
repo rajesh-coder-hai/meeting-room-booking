@@ -1,42 +1,81 @@
 const Booking = require("../models/Booking");
-// const Room = require("../models/Room");
+const { createCalenderEventWithBooking } = require("./msgraphUtilController");
+const Room = require("../models/Room");
+const handleApiError = require("../utils/errorHandler");
 
 // Function to check room availability
-const isRoomAvailable = async (roomId, start, end, meetingId=null) => {
+const isRoomAvailable = async (roomId, start, end, meetingId = null) => {
     const overlappingBooking = await Booking.findOne({
         roomId,
         $or: [
             { start: { $lt: end }, end: { $gt: start } }, // Overlapping condition
         ],
     });
-if (overlappingBooking && overlappingBooking._id.toString() === meetingId) {
-    return true; // Room is not available
-}
+    if (overlappingBooking && overlappingBooking._id.toString() === meetingId) {
+        return true; // Room is not available
+    }
     return !overlappingBooking; // If no overlapping booking, room is available
 };
 
+function getFloorName(floorNumber) {
+    if (floorNumber === 0) {
+        return "Ground";
+    }
+    if (floorNumber === -1) {
+        return "Lower ground";
+    }
+
+    // Determine the suffix for the floor number
+    const suffix = (n) => {
+        if (n === 1) return 'st';
+        if (n === 2) return 'nd';
+        if (n === 3) return 'rd';
+        return 'th'; // For numbers other than 1, 2, 3
+    };
+
+    // Handle positive floor numbers
+    return `${Math.abs(floorNumber)}${suffix(Math.abs(floorNumber))} floor`;
+}
+
 // Book a meeting room
 exports.bookRoom = async (req, res) => {
-    //   console.log("booking room userid", { userid: req.user, body: req.body });
-
-    const { roomId, start, end } = req.body;
+    const token = req.accessToken
+    const { roomId, start, end, title, attendees, allDay } = req.body;
     //check if room is available
     const available = await isRoomAvailable(roomId, start, end);
-    console.log("available---", available);
+    // console.log("ms token---", token);
 
     if (!available) {
         return res
             .status(400)
             .json({ error: "Room not available during the time slot." });
     }
+
+    const room = await Room.findById(roomId);
+    const floorName = getFloorName(room.floorNo);
     try {
-        const booking = await Booking.create({
+
+        //create calender event
+        const eventResponse = await createCalenderEventWithBooking({
+            userId: req.user.microsoftId,
+            subject: title,
+            startDateTime: start,
+            endDateTime: end,
+            attendees: attendees,
+            accessToken: token,
+            location: `CONF - ${room.roomName} ${floorName}`,
+            isAllDay: allDay,
+        });
+
+        const bookingResponse = await Booking.create({
             ...req.body,
             user: req.user._id,
         });
-        res.status(201).json(booking);
+
+        console.log("calender event data booking controller", eventResponse);
+        res.status(201).json({ ...eventResponse, ...bookingResponse });
     } catch (error) {
-        res.status(400).json({ message: "Error booking room", error });
+        handleApiError(error, res, "Fail to book room");
     }
 };
 
@@ -49,7 +88,7 @@ exports.viewMyBookings = async (req, res) => {
         }).populate("room");
         res.json(bookings);
     } catch (error) {
-        res.status(400).json({ message: "Error fetching bookings", error });
+        handleApiError(error, res, "Error fetching bookings");
     }
 };
 
@@ -58,7 +97,9 @@ exports.viewBookingsByDateRange = async (req, res) => {
 
     try {
         if (!startDate || !endDate || !roomId) {
-            return res.status(400).json({ message: "Missing required query parameters" });
+            return res
+                .status(400)
+                .json({ message: "Missing required query parameters" });
         }
 
         const bookings = await Booking.find({
@@ -66,18 +107,16 @@ exports.viewBookingsByDateRange = async (req, res) => {
             $or: [
                 {
                     start: { $lte: endDate },
-                    end: { $gte: startDate }
+                    end: { $gte: startDate },
                 },
             ],
         }).populate("roomId");
 
         res.json(bookings);
     } catch (error) {
-        console.error("Error fetching bookings:", error);
-        res.status(500).json({ message: "Internal server error", error });
+        handleApiError(error, res, "Error fetching bookings by date range");
     }
 };
-
 
 // Cancel booking
 exports.cancelBooking = async (req, res) => {
@@ -87,10 +126,13 @@ exports.cancelBooking = async (req, res) => {
             _id: id,
             user: req.user._id,
         });
-        if (!booking) return res.status(404).json({ message: "You are not allowed to cancel this meeting." });
+        if (!booking)
+            return res
+                .status(404)
+                .json({ message: "You are not allowed to cancel this meeting." });
         res.json({ message: "Booking canceled" });
     } catch (error) {
-        res.status(400).json({ message: "Error canceling booking", error });
+        handleApiError(error, res, "Error canceling booking");
     }
 };
 
@@ -98,7 +140,11 @@ exports.cancelBooking = async (req, res) => {
 exports.updateBookingById = async (req, res) => {
     const { id: bookingId } = req.params;
     try {
-        const { roomId: { _id: myRoomId }, start, end } = req.body;
+        const {
+            roomId: { _id: myRoomId },
+            start,
+            end,
+        } = req.body;
         //check if room is available
         const available = await isRoomAvailable(myRoomId, start, end, bookingId);
         console.log("available---", available);
@@ -114,9 +160,12 @@ exports.updateBookingById = async (req, res) => {
             req.body,
             { new: true }
         );
-        if (!booking) return res.status(404).json({ message: "You are not allowed to update this meeting." });
+        if (!booking)
+            return res
+                .status(404)
+                .json({ message: "You are not allowed to update this meeting." });
         res.json(booking);
     } catch (error) {
-        res.status(400).json({ message: "Error updating booking", error });
+        handleApiError(error, res, "Error updating booking");
     }
 };

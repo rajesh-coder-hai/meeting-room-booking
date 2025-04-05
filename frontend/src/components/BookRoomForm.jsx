@@ -1,32 +1,74 @@
-import React from "react";
+import React, { useCallback, useState } from "react";
 import { bookRoom } from "../api/api";
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
 import moment from "moment";
 import { useDispatch } from "react-redux";
-import {  showErrorToast, showSuccessToast } from "../store/slices/sharedSlice";
+import { showErrorToast, showSuccessToast } from "../store/slices/sharedSlice";
+import SearchUser from "./SearchUser";
+import Favorites from "./Favourite";
 
-const BookRoomForm = ({rooms, handleRoomChange, currentRoomId, handleNewBookingSchedule}) => {
- const dispatch = useDispatch();
+const BookRoomForm = ({
+  rooms,
+  handleRoomChange,
+  currentRoomId,
+  handleNewBookingSchedule,
+}) => {
+  const dispatch = useDispatch();
+  const [selectedAttendees, setSelectedAttendees] = useState([]);
+
   const handleSubmit = async (values) => {
     try {
       console.log("Form Values:", values);
       const payload = {
         ...values,
-        start: values.startTime,
-        end: values.endTime,
+        start: moment(values.startTime).toISOString(),
+        end: moment(values.endTime).toISOString(),
         extendedProps: {
           description: values.description || "",
         },
+        attendees: selectedAttendees,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
+        // Timezone is passed from FE but not used by backend for now, defaults to UTC
+        // if start and end are ISoString, timezone will be UTC
+        // if start and end are Date, timezone will be the local time zone
       };
-     const {data} = await bookRoom(payload);
-     handleNewBookingSchedule(data);
-      dispatch(showSuccessToast('Room booked successfully!'));
+      const { data } = await bookRoom(payload);
+      handleNewBookingSchedule(data);
+      dispatch(showSuccessToast("Room booked successfully!"));
     } catch (error) {
-            console.error("Booking Error:", error);
-      dispatch(showErrorToast(error.response.data.error || 'An error occurred!'))
+      console.error("Booking Error:", error);
+      dispatch(
+        showErrorToast(error.response.data.error || "An error occurred!")
+      );
     }
   };
+
+  function getFloorName(floorNumber) {
+    if (!floorNumber) return null;
+    if (floorNumber === 0) {
+      return "Ground";
+    }
+    if (floorNumber === -1) {
+      return "Lower ground";
+    }
+
+    // Determine the suffix for the floor number
+    const suffix = (n) => {
+      if (n === 1) return "st";
+      if (n === 2) return "nd";
+      if (n === 3) return "rd";
+      return "th"; // For numbers other than 1, 2, 3
+    };
+
+    // Handle positive floor numbers
+    return `${Math.abs(floorNumber)}${suffix(Math.abs(floorNumber))} floor`;
+  }
+
+  const handleAttendeeChange = useCallback((updatedAttendees) => {
+    console.log("Selected attendees updated in parent:", updatedAttendees);
+    setSelectedAttendees(updatedAttendees);
+  }, []); // Empty dependency array is fine if it only uses the setter
 
   const BookRoomSchema = Yup.object().shape({
     roomId: Yup.string().required("Required"),
@@ -51,6 +93,10 @@ const BookRoomForm = ({rooms, handleRoomChange, currentRoomId, handleNewBookingS
     teamName: Yup.string().max(20, "Too Long!"),
   });
 
+  const chooseAttendeeFromFavorite = (attendee) => {
+    handleAttendeeChange(attendee);
+  };
+
   return (
     <Formik
       enableReinitialize
@@ -74,7 +120,21 @@ const BookRoomForm = ({rooms, handleRoomChange, currentRoomId, handleNewBookingS
         dirty,
         handleSubmit,
       }) => (
-        <Form >
+        <Form>
+          <div className="row">
+            {/* Search User from Microsoft */}
+            <div className="d-flex  align-items-center mb-3 gap-3">
+              <SearchUser
+                onChange={handleAttendeeChange}
+                options={selectedAttendees}
+                value={selectedAttendees}
+              />
+              <Favorites
+                attendees={selectedAttendees}
+                oSelectedAttendees={chooseAttendeeFromFavorite}
+              />
+            </div>
+          </div>
           <div className="row">
             <div className="col-md-4 mb-3">
               <label htmlFor="roomId" className="form-label fw-semibold">
@@ -91,15 +151,14 @@ const BookRoomForm = ({rooms, handleRoomChange, currentRoomId, handleNewBookingS
                   handleRoomChange(selectedRoomId); // Call the callback function
                 }}
               >
-                <option value="" >Select a meeting room</option>
+                <option value="">Select a meeting room</option>
                 {rooms.map((room) => (
                   <option
                     key={room._id}
                     value={room._id}
                     selected={values.roomId === room._id}
                   >
-                    {room.roomName}{" "}
-                    {`===> floor ${room.floorNo} ===> ${room.capacity} person`}
+                    {`${room.roomName} - ${getFloorName(room.floorNo)}`}
                   </option>
                 ))}
               </Field>
@@ -121,7 +180,10 @@ const BookRoomForm = ({rooms, handleRoomChange, currentRoomId, handleNewBookingS
                 min={new Date().toISOString().slice(0, 16)} // Restrict past dates
                 onChange={(e) => {
                   setFieldValue("start", e.target.value);
-                  if (values.end && new Date(e.target.value) >= new Date(values.end)) {
+                  if (
+                    values.end &&
+                    new Date(e.target.value) >= new Date(values.end)
+                  ) {
                     setFieldValue("end", ""); // Reset end date if invalid
                   }
                 }}
@@ -133,7 +195,12 @@ const BookRoomForm = ({rooms, handleRoomChange, currentRoomId, handleNewBookingS
               />
             </div>
 
-            <div className="col-md mb-3">
+            <div
+              className="col-md-4 mb-3"
+              style={{
+                display: values.allDay ? "none" : "block",
+              }}
+            >
               <label htmlFor="endTime" className="form-label fw-semibold">
                 End Time*
               </label>
@@ -144,25 +211,28 @@ const BookRoomForm = ({rooms, handleRoomChange, currentRoomId, handleNewBookingS
                 disabled={values.allDay}
                 min={values.start || new Date().toISOString().slice(0, 16)} // End must be after start
               />
-              <Field
-              type="checkbox"
-              name="allDay"
-              id="allDay"
-              className="form-check-input mt-2"
-              onChange={() => setFieldValue("allDay", !values.allDay)}
-            />
-            <label htmlFor="allDay" className="form-check-label fw-semibold mt-2">
-              All Day
-            </label>
 
               <ErrorMessage
                 name="endTime"
                 component="div"
                 className="text-danger"
               />
-
             </div>
-        
+          </div>
+          <div className="col-md-4 mb-3">
+            <Field
+              type="checkbox"
+              name="allDay"
+              id="allDay"
+              className="form-check-input mt-2"
+              onChange={() => setFieldValue("allDay", !values.allDay)}
+            />
+            <label
+              htmlFor="allDay"
+              className="form-check-label fw-semibold mt-2 mx-2"
+            >
+              All Day
+            </label>
           </div>
 
           {/* Rest of the form fields (title, description, team name, submit button) */}

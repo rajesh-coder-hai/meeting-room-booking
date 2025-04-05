@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const User = require('../models/User');
+const handleApiError = require('../utils/errorHandler');
 
 // Register user
 exports.register = async (req, res) => {
@@ -10,7 +11,7 @@ exports.register = async (req, res) => {
         const token = generateToken(user._id);
         res.status(201).json({ user, token });
     } catch (error) {
-        res.status(400).json({ message: 'Error registering user', error });
+        handleApiError(error, res, "Error creating user");
     }
 };
 
@@ -26,7 +27,7 @@ exports.login = async (req, res) => {
             res.status(401).json({ message: 'Invalid credentials' });
         }
     } catch (error) {
-        res.status(400).json({ message: 'Error logging in', error });
+        handleApiError(error, res, "Error logging in user");
     }
 };
 
