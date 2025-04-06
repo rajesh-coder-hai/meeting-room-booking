@@ -5,51 +5,49 @@ const handleApiError = require('../utils/errorHandler');
 // Get all rooms
 exports.getRooms = async (req, res) => {
   try {
-    // If id is provided, return room with that id
-    if (req.params.id) {
-      const room = await Room.findById(req.params.id);
-      if (!room) return res.status(404).json({ message: 'Room not found' });
-      return res.json(room);
+    const query = {};
+    // Boolean example
+    if (req.query.projector !== undefined) {
+      query.projector = req.query.projector === 'true'; // Convert string 'true' to boolean
     }
 
-    // If search query exists, return rooms matching the search string
-    if (req.query.search) {
-      const rooms = await Room.find({ roomName: { $regex: req.query.search, $options: 'i' } });
-      return res.json(rooms);
-    }
-
-    let query = {};
-
-    // If filter object exists, apply filters
-    if (req.query.filter) {
+    // Array example (Floor)
+    if (req.query.floorNo) {
       try {
-        const filter = JSON.parse(req.query.filter);
-
-        if (filter.projector !== undefined) {
-          query.projector = filter.projector;
+        const floors = JSON.parse(req.query.floorNo); // Parse the JSON string
+        if (Array.isArray(floors) && floors.length > 0) {
+          query.floorNo = { $in: floors.map(Number) }; // Use $in with parsed numbers
         }
-
-        if (filter.tvScreen !== undefined) {
-          query.tvScreen = filter.tvScreen;
-        }
-
-        if (filter.whiteboard !== undefined) {
-          query.whiteboard = filter.whiteboard;
-        }
-
-        if (Array.isArray(filter.capacity) && filter.capacity.length === 2) {
-          query.capacity = { $gte: filter.capacity[0], $lte: filter.capacity[1] };
-        }
-
-        if (Array.isArray(filter.floorNo) && filter.floorNo.length > 0) {
-          query.floorNo = { $in: filter.floorNo };
-        }
-      } catch (error) {
-        return res.status(400).json({ message: 'Invalid filter format', error });
+      } catch (e) {
+        console.warn("Failed to parse floorNo query param:", req.query.floorNo);
+        // Handle potential JSON parse error - maybe return 400 Bad Request
       }
     }
 
-    const rooms = await Room.find(query);
+    // Range example (Capacity)
+    if (req.query.capacity) {
+      try {
+        const capacityRange = JSON.parse(req.query.capacity);
+        if (Array.isArray(capacityRange) && capacityRange.length === 2) {
+          query.capacity = {};
+          if (capacityRange[0] !== null && capacityRange[0] > 0) {
+            query.capacity.$gte = Number(capacityRange[0]);
+          }
+          if (capacityRange[1] !== null && capacityRange[1] < Infinity) {
+            query.capacity.$lte = Number(capacityRange[1]);
+          }
+          // If $gte or $lte was not added, remove the empty capacity object
+          if (Object.keys(query.capacity).length === 0) {
+            delete query.capacity;
+          }
+        }
+      } catch (e) {
+        console.warn("Failed to parse capacity query param:", req.query.capacity);
+      }
+    }
+
+    console.log("Backend Mongoose Query:", query);
+    const rooms = await Room.find(query); // Use the constructed query
     res.json(rooms);
   } catch (error) {
     handleApiError(error, res, "error fetching rooms");

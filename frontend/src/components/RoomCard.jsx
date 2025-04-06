@@ -1,129 +1,230 @@
 import React from "react";
 import { motion } from "framer-motion";
-import "bootstrap/dist/css/bootstrap.min.css"; // Make sure Bootstrap CSS is imported
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"; // Import FontAwesome
+
+// MUI Imports
 import {
-  faUsers,
-  faProjectDiagram,
-  faTv,
-  faChalkboard,
-  faPhone,
-  faEdit,
-  faCalendarCheck,
-  faDeleteLeft,
-} from "@fortawesome/free-solid-svg-icons";
+  Card,
+  CardHeader,
+  CardContent,
+  CardActions,
+  CardActionArea, // To make the main card area clickable
+  Typography,
+  Grid,
+  Box,
+  IconButton,
+  Button,
+  Tooltip, // Optional: for icon button hints
+  Chip, // Optional: for displaying capacity/floor nicely
+} from "@mui/material";
+
+// MUI Icons (replace Font Awesome)
+import GroupIcon from "@mui/icons-material/Group"; // Replacement for faUsers
+import VideocamIcon from "@mui/icons-material/Videocam"; // Replacement for faProjectDiagram/faProjector
+import TvIcon from "@mui/icons-material/Tv"; // Replacement for faTv
+import DashboardIcon from "@mui/icons-material/Dashboard"; // Replacement for faChalkboard
+import PhoneIcon from "@mui/icons-material/Phone"; // Replacement for faPhone
+import EditIcon from "@mui/icons-material/Edit"; // Replacement for faEdit
+import DeleteIcon from "@mui/icons-material/DeleteOutline"; // Replacement for faDeleteLeft (using outline variant)
+import EventAvailableIcon from "@mui/icons-material/EventAvailable"; // Replacement for faCalendarCheck
+
+// Helper function (keep as is)
+function getFloorName(floorNumber) {
+  if (floorNumber == null || floorNumber === undefined) return "";
+  if (floorNumber === 0) return "Ground";
+  if (floorNumber === -1) return "Lower ground";
+  const n = Math.abs(floorNumber);
+  const suffix = ["th", "st", "nd", "rd"][
+    n % 100 > 3 && n % 100 < 21 ? 0 : n % 10 < 4 ? n % 10 : 0
+  ];
+  return `${n}${suffix} floor`;
+}
 
 export const RoomCard = ({ room, onClick, isAdmin, onEdit, onDelete }) => {
-  // Add isAdmin prop
-  const gradients = [
-    "linear-gradient(to right,rgb(82, 133, 245),rgb(20, 121, 92))",
-    "linear-gradient(to right,rgb(178, 104, 243),rgb(51, 45, 145))",
-    "linear-gradient(to right,rgb(53, 99, 173), #111827)",
-    "linear-gradient(to right,rgb(43, 190, 178), #0E7490)",
-    "linear-gradient(to right,rgb(253, 182, 28), #EA580C)",
-    "linear-gradient(to right, #DB2777, #BE123C)",
-    "linear-gradient(to right,rgb(61, 99, 226), #1E3A8A)",
-    "linear-gradient(to right,rgb(58, 212, 115), #134E4A)",
-    "linear-gradient(to right,rgb(92, 82, 219), #4C1D95)",
-    "linear-gradient(to right,rgb(224, 122, 66), #991B1B)",
-    "linear-gradient(to right,rgb(154, 218, 66), #065F46)",
-  ];
-
-  const randomGradient =
-    gradients[Math.floor(Math.random() * gradients.length)];
+  // Stop propagation for button clicks inside the card action area
+  const handleButtonClick = (e, callback, roomData) => {
+    e.stopPropagation(); // Prevent the main card's onClick from firing
+    callback(roomData);
+  };
 
   return (
+    // motion.div remains for animation. It wraps the Grid item in the parent.
+    // The component itself now just returns the Card.
+    // The parent RoomManager places this inside a <Grid item>.
     <motion.div
-      className="col-md-4 mb-4" // Bootstrap grid classes
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6 }}
+      style={{ height: "100%" }} // Ensure motion div takes full height for Card height: 100%
     >
-      <div
-        className="card shadow-lg" // Bootstrap card and shadow
-        style={{
-          // background: randomGradient,
-          // color: "black",
-          cursor: "pointer",
-          // borderRadius: '12px',
-          overflow: "hidden",
+      <Card
+        variant="outlined" // Or elevation={2} for shadow
+        sx={{
+          height: "100%", // Make card fill the grid item height
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "space-between", // Pushes actions to bottom
+          transition: "transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out", // Smooth hover effect
+          "&:hover": {
+            transform: "translateY(-4px)", // Slight lift on hover
+            boxShadow: 3, // Increase shadow on hover (if using elevation)
+          },
         }}
-        onClick={() => onClick(room)} // Handle click on the card
       >
-        <div className="card-header text-dark text-center">
-          {" "}
-          {/* Card Header */}
-          <h5 className="fw-bold mb-0">
-            {room.roomName} (Floor - {room.floorNo})
-          </h5>
-        </div>
+        {/* Make the main content area clickable */}
+        <CardActionArea
+          onClick={() => onClick(room)}
+          sx={{ flexGrow: 1, display: "flex", flexDirection: "column" }}
+        >
+          <CardHeader
+            title={room.roomName}
+            subheader={getFloorName(room.floorNo)}
+            titleTypographyProps={{
+              variant: "h6",
+              align: "center",
+              gutterBottom: true,
+            }}
+            subheaderTypographyProps={{
+              variant: "body2",
+              align: "center",
+              color: "text.secondary",
+            }}
+            sx={{
+              borderBottom: 1,
+              borderColor: "divider",
+              width: "100%",
+              pt: 2,
+              pb: 1,
+            }} // Style header
+          />
 
-        <div className="card-body text-dark">
-          {" "}
-          {/* Card Body */}
-          <div className="row g-3">
+          <CardContent sx={{ flexGrow: 1, width: "100%", pt: 2 }}>
+            {/* Use Grid for feature layout */}
+            <Grid container spacing={1.5} alignItems="center">
+              {/* Capacity */}
+              <Grid
+                item
+                xs={6}
+                sx={{ display: "flex", alignItems: "center", gap: 1 }}
+              >
+                <GroupIcon fontSize="small" color="action" />
+                <Typography variant="body2">Cap: {room.capacity}</Typography>
+              </Grid>
+              {/* Phone Extension */}
+              <Grid
+                item
+                xs={6}
+                sx={{ display: "flex", alignItems: "center", gap: 1 }}
+              >
+                <PhoneIcon fontSize="small" color="action" />
+                <Typography variant="body2">
+                  Ext: {room.extensionNumber || "N/A"}
+                </Typography>
+              </Grid>
+              {/* Projector */}
+              <Grid
+                item
+                xs={6}
+                sx={{ display: "flex", alignItems: "center", gap: 1 }}
+              >
+                <VideocamIcon
+                  fontSize="small"
+                  color={room.projector ? "success" : "disabled"}
+                />
+                <Typography
+                  variant="body2"
+                  color={room.projector ? "text.primary" : "text.disabled"}
+                >
+                  Projector
+                </Typography>
+              </Grid>
+              {/* TV Screen */}
+              <Grid
+                item
+                xs={6}
+                sx={{ display: "flex", alignItems: "center", gap: 1 }}
+              >
+                <TvIcon
+                  fontSize="small"
+                  color={room.tvScreen ? "success" : "disabled"}
+                />
+                <Typography
+                  variant="body2"
+                  color={room.tvScreen ? "text.primary" : "text.disabled"}
+                >
+                  TV Screen
+                </Typography>
+              </Grid>
+              {/* Whiteboard */}
+              <Grid
+                item
+                xs={6}
+                sx={{ display: "flex", alignItems: "center", gap: 1 }}
+              >
+                <DashboardIcon
+                  fontSize="small"
+                  color={room.whiteboard ? "success" : "disabled"}
+                />
+                <Typography
+                  variant="body2"
+                  color={room.whiteboard ? "text.primary" : "text.disabled"}
+                >
+                  Whiteboard
+                </Typography>
+              </Grid>
+              {/* Add more features if needed */}
+            </Grid>
+          </CardContent>
+        </CardActionArea>{" "}
+        {/* End Clickable Area */}
+        {/* Action Buttons - Outside CardActionArea */}
+        <CardActions
+          sx={{
+            justifyContent: "space-between",
+            borderTop: 1,
+            borderColor: "divider",
+            px: 2,
+            py: 1,
+          }}
+        >
+          <Box>
             {" "}
-            {/* Use Bootstrap's grid for layout */}
-            <div className="col-6 d-flex align-items-center">
-              <FontAwesomeIcon icon={faUsers} className="me-2 fs-4" />
-              <span>Capacity: {room.capacity}</span>
-            </div>
-            <div className="col-6 d-flex align-items-center">
-              <FontAwesomeIcon icon={faProjectDiagram} className="me-2 fs-4" />
-              <span>Projector: {room.projector ? "Yes" : "No"}</span>
-            </div>
-            <div className="col-6 d-flex align-items-center">
-              <FontAwesomeIcon icon={faTv} className="me-2 fs-4" />
-              <span>TV: {room.tvScreen ? "Yes" : "No"}</span>
-            </div>
-            <div className="col-6 d-flex align-items-center">
-              <FontAwesomeIcon icon={faChalkboard} className="me-2 fs-4" />
-              <span>Whiteboard: {room.whiteboard ? "Yes" : "No"}</span>
-            </div>
-            <div className="col-6 d-flex align-items-center">
-              <FontAwesomeIcon icon={faPhone} className="me-2 fs-4" />
-              <span>Ext: {room.extensionNumber || "N/A"}</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="card-footer bg-transparent py-3 d-flex justify-content-between">
-          {/* Left-aligned buttons */}
-
-          {isAdmin && (
-            <div className="d-flex justify-content-start gap-2">
-              <button
-                className="btn btn-outline-secondary me-2 text-dark"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  console.log("Edit room:", room);
-                  onEdit(room);
-                }}
-              >
-                <FontAwesomeIcon icon={faEdit} className="me-2" />
-                Edit
-              </button>
-              <button
-                className="btn btn-outline-danger me-2 text-dark"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  console.log("delete room:", room);
-                  onDelete(room);
-                }}
-              >
-                <FontAwesomeIcon icon={faDeleteLeft} className="me-2" />
-                Delete
-              </button>
-            </div>
-          )}
-
-          {/* Right-aligned button */}
-          <button className="btn btn-primary">
-            <FontAwesomeIcon icon={faCalendarCheck} className="me-2" />
-            Book
-          </button>
-        </div>
-      </div>
+            {/* Container for left-aligned admin buttons */}
+            {isAdmin && (
+              <>
+                <Tooltip title="Edit Room">
+                  <IconButton
+                    size="small"
+                    aria-label={`Edit ${room.roomName}`}
+                    onClick={(e) => handleButtonClick(e, onEdit, room)}
+                    color="secondary"
+                  >
+                    <EditIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+                <Tooltip title="Delete Room">
+                  <IconButton
+                    size="small"
+                    aria-label={`Delete ${room.roomName}`}
+                    onClick={(e) => handleButtonClick(e, onDelete, room)}
+                    color="error"
+                  >
+                    <DeleteIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+              </>
+            )}
+          </Box>
+          <Button
+            variant="contained"
+            size="small"
+            startIcon={<EventAvailableIcon />}
+            onClick={(e) => handleButtonClick(e, onClick, room)} // Trigger same action as card click
+            sx={{ textTransform: "none" }} // Prevent uppercase text
+          >
+            Book Now
+          </Button>
+        </CardActions>
+      </Card>
     </motion.div>
   );
 };
