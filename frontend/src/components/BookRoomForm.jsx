@@ -108,12 +108,24 @@ const BookRoomForm = ({
   };
 
   // Attendee selection handler (keep as is)
-  const handleAttendeeChange = useCallback((updatedAttendees) => {
+  const handleAttendeeChange = useCallback((updatedAttendees, addMore) => {
     console.log(
       "Selected attendees updated in BookRoomForm:",
       updatedAttendees
     );
-    setSelectedAttendees(updatedAttendees);
+    // If addMore is true, append to existing attendees
+    if (addMore) {
+      setSelectedAttendees((prev) => {
+        const combined = [...prev, ...updatedAttendees];
+        const deduped = combined.filter(
+          (attendee, index, self) =>
+            index === self.findIndex((a) => a.id === attendee.id)
+        );
+        return deduped;
+      });
+    } else {
+      setSelectedAttendees(updatedAttendees);
+    }
   }, []);
 
   // Validation Schema (keep as is, but refine date validation message)
@@ -211,7 +223,13 @@ const BookRoomForm = ({
             }}
           >
             <Box sx={{ flexShrink: 0, pt: { xs: 0, sm: 1, md: 0 } }}>
-              <Favorites onSelectAttendees={chooseAttendeeFromFavorite} />
+              <Favorites
+                // onSelectAttendees={chooseAttendeeFromFavorite}
+                attendees={selectedAttendees}
+                oSelectedAttendees={(values) =>
+                  handleAttendeeChange(values, true)
+                }
+              />
             </Box>
 
             <Box
@@ -377,7 +395,6 @@ const BookRoomForm = ({
                   display: "flex",
                   justifyContent: "flex-end",
                   gap: 2,
-                  mt: 2,
                 }}
               >
                 {" "}

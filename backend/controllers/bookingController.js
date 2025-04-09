@@ -71,9 +71,12 @@ exports.bookRoom = async (req, res) => {
             ...req.body,
             user: req.user._id,
         });
-
-        console.log("calender event data booking controller", bookingResponse);
-        res.status(201).json(eventResponse);
+        let finalResponse = {
+            ...eventResponse,
+            ...bookingResponse,
+        }
+        console.log("calender event data booking controller", finalResponse);
+        res.status(201).json(finalResponse);
     } catch (error) {
         handleApiError(error, res, "Fail to book room");
     }

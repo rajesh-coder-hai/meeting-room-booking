@@ -14,7 +14,8 @@ import {
   IconButton,
   Button,
   Tooltip, // Optional: for icon button hints
-  Chip, // Optional: for displaying capacity/floor nicely
+  Chip,
+  useTheme, // Optional: for displaying capacity/floor nicely
 } from "@mui/material";
 
 // MUI Icons (replace Font Awesome)
@@ -38,6 +39,37 @@ function getFloorName(floorNumber) {
   ];
   return `${n}${suffix} floor`;
 }
+
+const StatusChip = ({ room }) => {
+  const theme = useTheme();
+  const status = room.meta.text?.toLowerCase();
+
+  const getStatusColor = () => {
+    switch (status) {
+      case "available":
+        return theme.palette.success.main;
+      case "busy":
+        return theme.palette.error.main;
+      default:
+        return theme.palette.warning.main;
+    }
+  };
+
+  return (
+    <Chip
+      label={room.meta.text}
+      size="small"
+      sx={{
+        bgcolor: getStatusColor(),
+        color: theme.palette.getContrastText(getStatusColor()), // ensures text is readable
+        fontWeight: "bold",
+        position: "absolute",
+        top: "-10px",
+        left: 0,
+      }}
+    />
+  );
+};
 
 export const RoomCard = ({ room, onClick, isAdmin, onEdit, onDelete }) => {
   // Stop propagation for button clicks inside the card action area
@@ -68,6 +100,7 @@ export const RoomCard = ({ room, onClick, isAdmin, onEdit, onDelete }) => {
             transform: "translateY(-4px)", // Slight lift on hover
             boxShadow: 3, // Increase shadow on hover (if using elevation)
           },
+          overflow: "visible",
         }}
       >
         {/* Make the main content area clickable */}
@@ -88,22 +121,7 @@ export const RoomCard = ({ room, onClick, isAdmin, onEdit, onDelete }) => {
                 </Typography>
 
                 {/* Status chip from meta.text */}
-                {room.meta?.text && (
-                  <Chip
-                    label={room.meta.text}
-                    size="small"
-                    sx={{
-                      bgcolor:
-                        room.meta.text.toLowerCase() === "available"
-                          ? "success.light"
-                          : room.meta.text.toLowerCase() === "busy"
-                          ? "error.light"
-                          : "warning.light",
-                      color: "common.white",
-                      fontWeight: "bold",
-                    }}
-                  />
-                )}
+                {room.meta?.text && <StatusChip room={room} />}
               </Box>
             }
             subheader={getFloorName(room.floorNo)}

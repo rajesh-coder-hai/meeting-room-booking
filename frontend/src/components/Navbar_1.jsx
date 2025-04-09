@@ -16,8 +16,10 @@ import {
   ListItemIcon,
   ListItemText,
   Toolbar,
+  Tooltip,
   Typography,
   useMediaQuery,
+  useTheme,
 } from "@mui/material";
 
 // MUI Icons
@@ -27,10 +29,15 @@ import MeetingRoomIcon from "@mui/icons-material/MeetingRoom"; // App Icon
 import MenuIcon from "@mui/icons-material/Menu";
 import MicrosoftIcon from "@mui/icons-material/Microsoft"; // Official MUI icon
 import { useDispatch } from "react-redux";
+import { useColorMode } from "../muiTheme/ThemeContext";
+import Brightness4Icon from "@mui/icons-material/Brightness4"; // Moon
+import Brightness7Icon from "@mui/icons-material/Brightness7"; // Sun
 
 const Navbar = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch(); // Assuming you might need dispatch later for state
+  const theme = useTheme();
+  const { toggleColorMode } = useColorMode();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   // const theme = useTheme();
@@ -142,7 +149,24 @@ const Navbar = () => {
       {/* Use Container to constrain width, remove if you want full-width */}
       <Container maxWidth="xl">
         <Toolbar disableGutters>
-          {" "}
+          {/* Theme toggle icon */}
+          <Tooltip
+            title={`Switch to ${
+              theme.palette.mode === "light" ? "Dark" : "Light"
+            } Mode`}
+          >
+            <IconButton
+              sx={{ ml: 1 }}
+              onClick={toggleColorMode}
+              color="inherit"
+            >
+              {theme.palette.mode === "dark" ? (
+                <Brightness7Icon />
+              ) : (
+                <Brightness4Icon />
+              )}
+            </IconButton>
+          </Tooltip>
           {/* disableGutters removes default padding */}
           {/* Mobile Menu Button */}
           <IconButton

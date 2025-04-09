@@ -1,12 +1,13 @@
 import React, { useState, useRef, useEffect } from "react";
+import { TextField, useTheme } from "@mui/material";
 
 const DebouncedSearch = ({ onSearch, delay = 500 }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const debouncedTimeout = useRef(null);
+  const theme = useTheme();
 
   const handleInputChange = (event) => {
-    const value = event.target.value;
-    setSearchTerm(value);
+    setSearchTerm(event.target.value);
   };
 
   useEffect(() => {
@@ -26,14 +27,25 @@ const DebouncedSearch = ({ onSearch, delay = 500 }) => {
   }, [searchTerm, onSearch, delay]);
 
   return (
-    <input
+    <TextField
       type="search"
-      className="form-control w-50 mx-auto"
-      id="searchRoom"
-      aria-describedby="search meeting room"
-      placeholder="Search Meeting Room..."
       value={searchTerm}
       onChange={handleInputChange}
+      label="Search Meeting Room"
+      variant="standard"
+      fullWidth
+      size="small"
+      sx={{
+        maxWidth: 400,
+        mx: "auto",
+        mt: 2,
+        input: {
+          color: theme.palette.text.primary,
+        },
+        "& .MuiOutlinedInput-root": {
+          backgroundColor: theme.palette.background.paper,
+        },
+      }}
     />
   );
 };
