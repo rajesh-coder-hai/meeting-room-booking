@@ -277,6 +277,7 @@ const RoomManager = () => {
             variant="outlined"
             startIcon={<FilterListIcon />}
             onClick={() => setFilterDrawerOpen(true)}
+            sx={{ minWidth: "100px" }}
           >
             Filters
           </Button>

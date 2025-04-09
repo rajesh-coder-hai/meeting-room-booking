@@ -77,6 +77,7 @@ export default function SearchUser({ options, value, onChange }) {
     <Autocomplete
       multiple
       size="small"
+      variant="standard"
       id="multi-select-dropdown"
       options={searchResult}
       limitTags={5}

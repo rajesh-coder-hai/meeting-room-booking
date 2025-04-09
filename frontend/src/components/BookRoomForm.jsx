@@ -224,7 +224,6 @@ const BookRoomForm = ({
           >
             <Box sx={{ flexShrink: 0, pt: { xs: 0, sm: 1, md: 0 } }}>
               <Favorites
-                // onSelectAttendees={chooseAttendeeFromFavorite}
                 attendees={selectedAttendees}
                 oSelectedAttendees={(values) =>
                   handleAttendeeChange(values, true)
@@ -256,6 +255,7 @@ const BookRoomForm = ({
                 <Select
                   labelId="room-select-label"
                   id="roomId"
+                  variant="standard"
                   name="roomId"
                   value={values.roomId}
                   label="Select Room *" // Label matches InputLabel
@@ -284,6 +284,7 @@ const BookRoomForm = ({
                 fullWidth
                 id="title"
                 name="title"
+                variant="standard"
                 label="Meeting Title *"
                 placeholder="e.g., Project Kick-off"
                 value={values.title}
@@ -298,6 +299,7 @@ const BookRoomForm = ({
                 fullWidth
                 id="startTime"
                 name="startTime"
+                variant="standard"
                 label="Start Time *"
                 type="datetime-local"
                 InputLabelProps={{ shrink: true }}
@@ -316,6 +318,7 @@ const BookRoomForm = ({
                   id="endTime"
                   name="endTime"
                   label="End Time *"
+                  variant="standard"
                   type="datetime-local"
                   InputLabelProps={{ shrink: true }}
                   value={values.endTime}
@@ -341,6 +344,7 @@ const BookRoomForm = ({
                 value={values.teamName}
                 onChange={handleChange}
                 onBlur={handleBlur}
+                variant="standard"
                 error={touched.teamName && Boolean(errors.teamName)}
                 helperText={touched.teamName && errors.teamName}
                 size="small"
@@ -355,6 +359,7 @@ const BookRoomForm = ({
                 multiline
                 rows={3}
                 value={values.description}
+                variant="standard"
                 onChange={handleChange}
                 onBlur={handleBlur}
                 error={touched.description && Boolean(errors.description)}
