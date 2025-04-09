@@ -91,7 +91,12 @@ export default function SearchUser({ options, value, onChange }) {
       onInputChange={handleInputChange}
       noOptionsText="No users found"
       renderInput={(params) => (
-        <TextField {...params} label="Search Users" placeholder="Search" />
+        <TextField
+          {...params}
+          label="Search Users"
+          placeholder="Search"
+          variant="standard"
+        />
       )}
       isOptionEqualToValue={(option, value) => option.id === value.id}
       renderOption={(props, option, { selected }) => (
