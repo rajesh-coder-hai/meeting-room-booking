@@ -76,13 +76,37 @@ export const RoomCard = ({ room, onClick, isAdmin, onEdit, onDelete }) => {
           sx={{ flexGrow: 1, display: "flex", flexDirection: "column" }}
         >
           <CardHeader
-            title={room.roomName}
+            title={
+              <Box
+                display="flex"
+                flexDirection="column"
+                alignItems="center"
+                gap={1}
+              >
+                <Typography variant="h6" align="center">
+                  {room.roomName}
+                </Typography>
+
+                {/* Status chip from meta.text */}
+                {room.meta?.text && (
+                  <Chip
+                    label={room.meta.text}
+                    size="small"
+                    sx={{
+                      bgcolor:
+                        room.meta.text.toLowerCase() === "available"
+                          ? "success.light"
+                          : room.meta.text.toLowerCase() === "busy"
+                          ? "error.light"
+                          : "warning.light",
+                      color: "common.white",
+                      fontWeight: "bold",
+                    }}
+                  />
+                )}
+              </Box>
+            }
             subheader={getFloorName(room.floorNo)}
-            titleTypographyProps={{
-              variant: "h6",
-              align: "center",
-              gutterBottom: true,
-            }}
             subheaderTypographyProps={{
               variant: "body2",
               align: "center",
@@ -94,7 +118,7 @@ export const RoomCard = ({ room, onClick, isAdmin, onEdit, onDelete }) => {
               width: "100%",
               pt: 2,
               pb: 1,
-            }} // Style header
+            }}
           />
 
           <CardContent sx={{ flexGrow: 1, width: "100%", pt: 2 }}>

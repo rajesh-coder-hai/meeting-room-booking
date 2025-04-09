@@ -1,33 +1,28 @@
+const Booking = require('../models/Booking');
 const CoreConfiguration = require('../models/CoreConfiguration');
 const Room = require('../models/Room');
 const handleApiError = require('../utils/errorHandler');
 
-// Get all rooms
 exports.getRooms = async (req, res) => {
   try {
     const query = {};
     const search = req.query.search || '';
-    console.log('search value hai******', search);
 
-    // Boolean example
     if (req.query.projector !== undefined) {
-      query.projector = req.query.projector === 'true'; // Convert string 'true' to boolean
+      query.projector = req.query.projector === 'true';
     }
 
-    // Array example (Floor)
     if (req.query.floorNo) {
       try {
-        const floors = JSON.parse(req.query.floorNo); // Parse the JSON string
+        const floors = JSON.parse(req.query.floorNo);
         if (Array.isArray(floors) && floors.length > 0) {
-          query.floorNo = { $in: floors.map(Number) }; // Use $in with parsed numbers
+          query.floorNo = { $in: floors.map(Number) };
         }
       } catch (e) {
         console.warn("Failed to parse floorNo query param:", req.query.floorNo);
-        // Handle potential JSON parse error - maybe return 400 Bad Request
       }
     }
 
-    // Range example (Capacity)
     if (req.query.capacity) {
       try {
         const capacityRange = JSON.parse(req.query.capacity);
@@ -39,7 +34,6 @@ exports.getRooms = async (req, res) => {
           if (capacityRange[1] !== null && capacityRange[1] < Infinity) {
             query.capacity.$lte = Number(capacityRange[1]);
           }
-          // If $gte or $lte was not added, remove the empty capacity object
           if (Object.keys(query.capacity).length === 0) {
             delete query.capacity;
           }
@@ -49,11 +43,55 @@ exports.getRooms = async (req, res) => {
       }
     }
 
-    console.log("Backend Mongoose Query:", query);
-    const rooms = await Room.find(query); // Use the constructed query
-    res.json(rooms);
+    const rooms = await Room.find(query);
+    const now = new Date();
+    const thirtyMinsLater = new Date(now.getTime() + 30 * 60 * 1000);
+
+    const enhancedRooms = await Promise.all(
+      rooms.map(async (room) => {
+        const bookings = await Booking.find({
+          roomId: room._id,
+          $or: [
+            {
+              start: { $lte: thirtyMinsLater },
+              end: { $gte: now },
+            }
+          ]
+        });
+
+        let meta = {
+          text: 'Available now',
+          status: 'available'
+        };
+
+        const ongoingBooking = bookings.find(b => b.start <= now && now < b.end);
+
+        if (ongoingBooking) {
+          const mins = Math.ceil((ongoingBooking.end - now) / 60000);
+          meta.text = `Not available - available in ${mins} min${mins > 1 ? 's' : ''}`;
+          meta.status = 'busy';
+        } else if (bookings.length > 0) {
+          const nextBooking = bookings
+            .map(b => b.start)
+            .sort((a, b) => a - b)[0];
+
+          const mins = Math.floor((nextBooking - now) / 60000);
+          meta.text = `Available for ${mins} min${mins > 1 ? 's' : ''}`;
+          meta.status = 'upcoming';
+        }
+
+        return {
+          ...room.toObject(),
+          meta
+        };
+      })
+    );
+    console.log('Enhanced Rooms:', enhancedRooms);
+
+    res.json(enhancedRooms);
   } catch (error) {
-    handleApiError(error, res, "error fetching rooms");
+    console.error(error);
+    res.status(500).json({ message: "Error fetching rooms" });
   }
 };
 
