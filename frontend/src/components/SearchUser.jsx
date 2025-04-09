@@ -76,11 +76,12 @@ export default function SearchUser({ options, value, onChange }) {
   return (
     <Autocomplete
       multiple
+      size="small"
       id="multi-select-dropdown"
       options={searchResult}
       limitTags={5}
-      minWidth="380px"
-      fullWidth
+      sx={{ minWidth: 300, width: 400 }}
+      // fullWidth
       getOptionLabel={(option) => `${option.displayName} (${option.mail})`}
       value={selectedValues}
       onChange={handleSelectionChange}

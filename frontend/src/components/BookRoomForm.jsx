@@ -26,6 +26,7 @@ import {
 // Your Child Components (ASSUMING they are also refactored/compatible)
 import SearchUser from "./SearchUser";
 import Favorites from "./Favourite";
+import MeetingLinks from "./MeetingLinks";
 
 // Helper function (keep as is)
 function getFloorName(floorNumber) {
@@ -48,6 +49,10 @@ const BookRoomForm = ({
   const dispatch = useDispatch();
   // Manage selected attendees state here, passed to SearchUser/Favorites
   const [selectedAttendees, setSelectedAttendees] = useState([]);
+  const [meetingUrls, setMeetingUrls] = useState({
+    outlookWebLink: "",
+    teamsJoinUrl: "",
+  });
 
   // Form submission logic (keep as is, maybe slight payload adjustment if needed)
   const handleSubmit = async (values, { setSubmitting, resetForm }) => {
@@ -58,10 +63,13 @@ const BookRoomForm = ({
         location:
           rooms.find((r) => r._id === values.roomId)?.roomName ||
           "Meeting Room", // Get location name
-        startDateTime: moment(values.startTime).toISOString(), // Send ISO UTC
+        startDateTime: moment(values.startTime).toLocaleString(), // Send  UTC
         endDateTime: values.allDay
-          ? moment(values.startTime).add(1, "day").startOf("day").toISOString()
-          : moment(values.endTime).toISOString(), // Handle allDay end time
+          ? moment(values.startTime)
+              .add(1, "day")
+              .startOf("day")
+              .toLocaleString()
+          : moment(values.endTime).toLocaleString(), // Handle allDay end time in UTC
         isAllDay: values.allDay,
         attendees: selectedAttendees.map((a) => ({
           email: a.mail,
@@ -70,18 +78,23 @@ const BookRoomForm = ({
         })), // Send required attendee info
         description: values.description || "",
         teamName: values.teamName || "",
-        // No need to send timezone if sending ISO strings (they imply UTC or have offset)
+        roomId: currentRoomId,
       };
-      // --- IMPORTANT: Backend needs userId and accessToken ---
-      // This component doesn't have direct access. The API call needs modification
-      // or these need to be passed down/retrieved differently.
-      // Assuming bookRoom injects them or is modified.
+
       const { data: newEventData } = await bookRoom(payload); // Assuming bookRoom now handles userId/token
 
-      handleNewBookingSchedule(payload, newEventData); // Pass original payload and event data
+      handleNewBookingSchedule({
+        ...payload,
+        outlookWebLink: newEventData.webLink,
+        teamsJoinUrl: newEventData.onlineMeeting.joinUrl,
+      }); // Pass original payload and event data
       dispatch(showSuccessToast("Room booked successfully!"));
       resetForm(); // Clear form on success
       setSelectedAttendees([]); // Clear attendees
+      setMeetingUrls({
+        outlookWebLink: newEventData.webLink,
+        teamsJoinUrl: newEventData.onlineMeeting.joinUrl,
+      });
     } catch (error) {
       console.error("Booking Error:", error);
       const errorMsg =
@@ -173,9 +186,8 @@ const BookRoomForm = ({
       initialValues={initialValues}
       validationSchema={BookRoomSchema}
       onSubmit={handleSubmit}
-      enableReinitialize // Important to update initialValues if currentRoomId changes
+      enableReinitialize
     >
-      {/* Use Formik's render prop pattern */}
       {({
         values,
         errors,
@@ -189,36 +201,35 @@ const BookRoomForm = ({
         resetForm,
       }) => (
         <Form>
-          {/* Grid container for overall form layout */}
-          <Grid2 container spacing={3}>
-            {/* Attendee Search and Favorites Section */}
-            <Grid2 item xs={12}>
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "flex-start",
-                  gap: 2,
-                  flexDirection: { xs: "column", sm: "row" },
-                }}
-              >
-                <Box sx={{ flexGrow: 1, width: "100%" }}>
-                  <SearchUser
-                    value={selectedAttendees} // Controlled component
-                    onChange={(newAttendees) => {
-                      // Directly use the callback from props
-                      handleAttendeeChange(newAttendees);
-                    }}
-                  />
-                </Box>
-                <Box sx={{ flexShrink: 0, mt: { xs: 2, sm: 0 } }}>
-                  {/* Pass the handler to apply selected favorites */}
-                  <Favorites onSelectAttendees={chooseAttendeeFromFavorite} />
-                </Box>
-              </Box>
-            </Grid2>
+          {/* Container Box for the form content */}
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "flex-start",
+              gap: 2,
+              flexDirection: { xs: "column", sm: "row" },
+            }}
+          >
+            <Box sx={{ flexShrink: 0, pt: { xs: 0, sm: 1, md: 0 } }}>
+              <Favorites onSelectAttendees={chooseAttendeeFromFavorite} />
+            </Box>
 
-            {/* Room Selection */}
-            <Grid2 item xs={12} sm={6} md={4}>
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: "column",
+                gap: 2.5,
+                flexGrow: 1,
+              }}
+            >
+              {" "}
+              {/* Use Box or Stack here */}
+              {/* 1. Attendee Search & Favorites Section - Kept at top */}
+              <SearchUser
+                value={selectedAttendees}
+                onChange={handleAttendeeChange}
+                label="Search Attendees *" // Indicate required nature if applicable via schema
+              />
               <FormControl
                 fullWidth
                 error={touched.roomId && Boolean(errors.roomId)}
@@ -229,13 +240,13 @@ const BookRoomForm = ({
                   id="roomId"
                   name="roomId"
                   value={values.roomId}
-                  label="Select Room *"
+                  label="Select Room *" // Label matches InputLabel
                   onChange={(e) => {
-                    const selectedRoomId = e.target.value;
-                    handleChange(e); // Let Formik handle its state
-                    handleRoomChange(selectedRoomId); // Call parent callback
+                    handleChange(e); // Formik handles value
+                    handleRoomChange(e.target.value); // Notify parent
                   }}
                   onBlur={handleBlur}
+                  size="small"
                 >
                   <MenuItem value="" disabled>
                     <em>Select a meeting room</em>
@@ -250,10 +261,21 @@ const BookRoomForm = ({
                   <FormHelperText>{errors.roomId}</FormHelperText>
                 )}
               </FormControl>
-            </Grid2>
-
-            {/* Start Time */}
-            <Grid2 item xs={12} sm={6} md={4}>
+              {/* 3. Meeting Title */}
+              <TextField
+                fullWidth
+                id="title"
+                name="title"
+                label="Meeting Title *"
+                placeholder="e.g., Project Kick-off"
+                value={values.title}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                error={touched.title && Boolean(errors.title)}
+                helperText={touched.title && errors.title}
+                size="small"
+              />
+              {/* 4. Start Time */}
               <TextField
                 fullWidth
                 id="startTime"
@@ -266,15 +288,11 @@ const BookRoomForm = ({
                 onBlur={handleBlur}
                 error={touched.startTime && Boolean(errors.startTime)}
                 helperText={touched.startTime && errors.startTime}
-                inputProps={{
-                  min: moment().format("YYYY-MM-DDTHH:mm"), // Restrict past dates/times
-                }}
+                inputProps={{ min: moment().format("YYYY-MM-DDTHH:mm") }}
+                size="small"
               />
-            </Grid2>
-
-            {/* End Time (Conditionally Rendered) */}
-            {!values.allDay && (
-              <Grid2 item xs={12} sm={6} md={4}>
+              {/* 5. End Time (Conditionally Rendered) */}
+              {!values.allDay && (
                 <TextField
                   fullWidth
                   id="endTime"
@@ -290,21 +308,42 @@ const BookRoomForm = ({
                   disabled={values.allDay}
                   inputProps={{
                     min:
-                      values.startTime || moment().format("YYYY-MM-DDTHH:mm"), // End must be after start
+                      values.startTime || moment().format("YYYY-MM-DDTHH:mm"),
                   }}
+                  size="small"
                 />
-              </Grid2>
-            )}
-
-            {/* All Day Switch */}
-            <Grid2
-              item
-              xs={12}
-              sm={values.allDay ? 12 : 6}
-              md={values.allDay ? 12 : 4}
-            >
-              {" "}
-              {/* Adjust width if EndTime hidden */}
+              )}
+              {/* 6. Team Name */}
+              <TextField
+                fullWidth
+                id="teamName"
+                name="teamName"
+                label="Team / Dept Name (Optional)"
+                placeholder="e.g., Marketing Team"
+                value={values.teamName}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                error={touched.teamName && Boolean(errors.teamName)}
+                helperText={touched.teamName && errors.teamName}
+                size="small"
+              />
+              {/* 7. Description */}
+              <TextField
+                fullWidth
+                id="description"
+                name="description"
+                label="Description (Optional)"
+                placeholder="Meeting agenda or notes..."
+                multiline
+                rows={3}
+                value={values.description}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                error={touched.description && Boolean(errors.description)}
+                helperText={touched.description && errors.description}
+                size="small"
+              />
+              {/* 8. All Day Switch */}
               <FormControlLabel
                 control={
                   <Switch
@@ -315,9 +354,8 @@ const BookRoomForm = ({
                       const isChecked = e.target.checked;
                       setFieldValue("allDay", isChecked);
                       if (isChecked) {
-                        setFieldValue("endTime", ""); // Clear end time if all day
+                        setFieldValue("endTime", "");
                       } else {
-                        // Set default end time if switching back from all day
                         setFieldValue(
                           "endTime",
                           moment(values.startTime)
@@ -326,94 +364,55 @@ const BookRoomForm = ({
                         );
                       }
                     }}
+                    size="small"
                   />
                 }
                 label="All Day Event"
+                sx={{ alignSelf: "flex-start" }} // Align switch to the start if needed
               />
-            </Grid2>
-
-            {/* Meeting Title */}
-            <Grid2 item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                id="title"
-                name="title"
-                label="Meeting Title *"
-                placeholder="e.g., Project Kick-off"
-                value={values.title}
-                onChange={handleChange}
-                onBlur={handleBlur}
-                error={touched.title && Boolean(errors.title)}
-                helperText={touched.title && errors.title}
-              />
-            </Grid2>
-
-            {/* Description */}
-            <Grid2 item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                id="description"
-                name="description"
-                label="Description"
-                placeholder="Meeting agenda or notes"
-                multiline
-                rows={3} // Adjust rows as needed
-                value={values.description}
-                onChange={handleChange}
-                onBlur={handleBlur}
-                error={touched.description && Boolean(errors.description)}
-                helperText={touched.description && errors.description}
-              />
-            </Grid2>
-
-            {/* Team Name (Optional) */}
-            <Grid2 item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                id="teamName"
-                name="teamName"
-                label="Team Name (Optional)"
-                placeholder="e.g., Marketing Team"
-                value={values.teamName}
-                onChange={handleChange}
-                onBlur={handleBlur}
-                error={touched.teamName && Boolean(errors.teamName)}
-                helperText={touched.teamName && errors.teamName}
-              />
-            </Grid2>
-
-            {/* Action Buttons */}
-            <Grid2 item xs={12}>
+              {/* </Stack> */}
+              {/* Action Buttons - Placed at the bottom */}
               <Box
                 sx={{
                   display: "flex",
-                  justifyContent: "center",
+                  justifyContent: "flex-end",
                   gap: 2,
                   mt: 2,
                 }}
               >
+                {" "}
+                {/* Align end */}
+                <Button
+                  type="button"
+                  variant="outlined"
+                  color="secondary"
+                  onClick={() => {
+                    resetForm();
+                    setSelectedAttendees([]);
+                  }}
+                  disabled={isSubmitting} // Disable while submitting
+                >
+                  Clear
+                </Button>
                 <Button
                   type="submit"
                   variant="contained"
                   color="primary"
-                  disabled={!dirty || !isValid || isSubmitting} // Disable if form not touched, invalid, or submitting
+                  disabled={!dirty || !isValid || isSubmitting}
                 >
-                  {isSubmitting ? <CircularProgress size={24} /> : "Book Room"}
-                </Button>
-                <Button
-                  type="button" // Important: type="button" to prevent form submission
-                  variant="outlined"
-                  color="secondary"
-                  onClick={() => {
-                    resetForm(); // Reset Formik state
-                    setSelectedAttendees([]); // Reset local attendee state
-                  }}
-                >
-                  Clear
+                  {isSubmitting ? (
+                    <CircularProgress size={24} color="inherit" />
+                  ) : (
+                    "Book Room"
+                  )}
                 </Button>
               </Box>
-            </Grid2>
-          </Grid2>
+            </Box>
+          </Box>
+          <MeetingLinks
+            outlookWebLink={meetingUrls.outlookWebLink}
+            teamsJoinUrl={meetingUrls.teamsJoinUrl}
+          />
         </Form>
       )}
     </Formik>

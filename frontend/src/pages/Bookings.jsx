@@ -1,33 +1,31 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
-import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
-import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
+import FullCalendar from "@fullcalendar/react";
+import timeGridPlugin from "@fullcalendar/timegrid";
 import moment from "moment";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useDispatch } from "react-redux";
 import { useSearchParams } from "react-router-dom";
 
 // --- MUI Imports ---
+import CloseIcon from "@mui/icons-material/Close"; // For Dialog close button
 import {
-  Container,
-  Grid,
+  Alert,
+  Box,
+  CircularProgress,
+  Container, // Alias to avoid naming conflict if needed elsewhere
+  Dialog, // For simple text inside dialog
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+  Divider,
+  Grid2,
+  IconButton,
+  Button as MuiButton,
   Paper,
   Typography,
-  Box,
-  Button as MuiButton, // Alias to avoid naming conflict if needed elsewhere
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogContentText, // For simple text inside dialog
-  DialogActions,
-  Divider,
-  CircularProgress,
-  Alert,
-  IconButton,
-  Tooltip,
-  Grid2, // For potential future use
 } from "@mui/material";
-import CloseIcon from "@mui/icons-material/Close"; // For Dialog close button
 // --- End MUI Imports ---
 
 // --- Your Component Imports ---
@@ -44,7 +42,6 @@ import {
   updateBooking,
 } from "../api/api";
 import { showErrorToast, showSuccessToast } from "../store/slices/sharedSlice";
-import Favorites from "../components/Favourite";
 // --- End API/Redux ---
 
 const Bookings = () => {
@@ -62,305 +59,229 @@ const Bookings = () => {
   const [loadingCalendar, setLoadingCalendar] = useState(false); // Loading state for calendar
   const [formError, setFormError] = useState(null); // Error state specific to form/calendar loading
 
-  // --- Core Logic Functions (Keep As Is) ---
   const handleViewChange = useCallback((arg) => {
     setCurrentView(arg.view.type);
-    setTimeRange({
-      // Directly set new range
-      start: moment(arg.start).toISOString(), // Use ISO string for consistency
-      end: moment(arg.end).toISOString(),
-    });
-  }, []); // Empty dependency array - correct
-
-  const getRoomBookingsByDateRangeAPIcall = useCallback(
-    async (roomIdToFetch, startDate, endDate) => {
-      if (!roomIdToFetch || !startDate || !endDate) return; // Don't fetch without required info
-
-      setLoadingCalendar(true);
-      setFormError(null);
-      try {
-        const { data: availability } = await getRoomBookingsByDateRange(
-          roomIdToFetch,
-          startDate,
-          endDate
-        );
-        const modifiedEvents = availability.map((event) => ({
-          // Use event._id directly if available, otherwise graph event id might be different
-          id: event._id || event.id, // Ensure unique ID for FullCalendar
-          title: event.title || "Untitled Event", // Add default title
-          start: moment(event.start).toISOString(),
-          end: moment(event.end).toISOString(),
-          allDay: event.allDay || false, // Assume not all day if missing
-          backgroundColor: moment(event.start).isBefore(moment()) // Use moment() for current time
-            ? "#6c757d" // Bootstrap grey-like color
-            : "#198754", // Bootstrap green-like color
-          borderColor: moment(event.start).isBefore(moment())
-            ? "#6c757d"
-            : "#198754",
-          extendedProps: {
-            ...event.extendedProps, // Keep existing extendedProps
-            _id: event._id, // Ensure local DB ID is available
-            description: event.description,
-            webLink: event.webLink, // Make sure these are in your backend data
-            teamsLink: event.onlineMeeting?.joinUrl || event.teamsLink, // Get teams link
-          },
-        }));
-        setEvents(modifiedEvents);
-      } catch (error) {
-        console.error("Error fetching room bookings:", error);
-        const errorMsg =
-          error.response?.data?.message || "Failed to load bookings.";
-        setFormError(errorMsg);
-        dispatch(showErrorToast(errorMsg));
-        setEvents([]); // Clear events on error
-      } finally {
-        setLoadingCalendar(false);
-      }
-    },
-    [dispatch]
-  ); // Add dispatch dependency
-
-  const handleRoomChange = useCallback(
-    (newRoomId) => {
-      console.log("handleRoomChange called----", newRoomId);
-      setCurrentMeetingRoom(newRoomId);
-      // Update URL search param
-      setSearchParam({ roomId: newRoomId });
-      // Fetch data for the new room based on the *current* timeRange
-      if (timeRange.start && timeRange.end) {
-        getRoomBookingsByDateRangeAPIcall(
-          newRoomId,
-          timeRange.start,
-          timeRange.end
-        );
-      } else {
-        // If timeRange isn't set yet, trigger initial fetch based on current view
-        const calendarApi = calendarRef.current?.getApi();
-        if (calendarApi) {
-          const view = calendarApi.view;
-          getRoomBookingsByDateRangeAPIcall(
-            newRoomId,
-            moment(view.activeStart).toISOString(),
-            moment(view.activeEnd).toISOString()
-          );
-        }
-      }
-    },
-    [timeRange, getRoomBookingsByDateRangeAPIcall, setSearchParam]
-  );
-
-  const handleNewBookingSchedule = useCallback(
-    (newBookingData, newEventData) => {
-      console.log("New booking schedule:", newBookingData);
-      // Create a FullCalendar-compatible event object from the new booking data
-      const newEvent = {
-        id: newEventData.id || newBookingData._id, // Use Graph ID if available, else DB ID
-        title: newBookingData.subject || "New Booking",
-        start: moment(newBookingData.startDateTime).toISOString(),
-        end: moment(newBookingData.endDateTime).toISOString(),
-        allDay: newBookingData.isAllDay || false,
-        backgroundColor: "#198754", // Green for new
-        borderColor: "#198754",
-        extendedProps: {
-          _id: newBookingData._id, // Ensure local DB ID is available if needed
-          description: newBookingData.description,
-          webLink: newEventData.webLink, // Get from Graph response
-          teamsLink: newEventData.onlineMeeting?.joinUrl, // Get from Graph response
-        },
+    setTimeRange((prev) => {
+      const newRange = {
+        start: moment(arg.start).format(),
+        end: moment(arg.end).format(),
       };
-      setEvents((prevEvents) => [...prevEvents, newEvent]);
-      dispatch(showSuccessToast("Meeting booked successfully!"));
-      // Maybe close the form section or clear the form here
-    },
-    [dispatch]
-  );
-
-  const handleEventClick = useCallback((clickInfo) => {
-    console.log("Event clicked:", clickInfo.event);
-    setModalEvent({
-      // Prioritize local _id if available from extendedProps
-      _id: clickInfo.event.extendedProps?._id || clickInfo.event.id,
-      title: clickInfo.event.title,
-      description: clickInfo.event.extendedProps?.description,
-      start: clickInfo.event.start,
-      end: clickInfo.event.end,
-      allDay: clickInfo.event.allDay,
-      // Get links from extendedProps where they should be stored
-      webLink: clickInfo.event.extendedProps?.webLink,
-      teamsLink: clickInfo.event.extendedProps?.teamsLink,
+      return prev.start !== newRange.start || prev.end !== newRange.end
+        ? newRange
+        : prev;
     });
-    setShowDetailsModal(true);
   }, []);
+
+  useEffect(() => {
+    if (calendarRef.current) {
+      const calendarApi = calendarRef.current.getApi();
+      calendarApi.setOption("events", events);
+    }
+  }, [events]);
+
+  useEffect(() => {
+    if (timeRange) {
+      getRoomBookingsByDateRangeAPIcall(
+        currentMeetingRom,
+        moment(timeRange.start).toISOString(),
+        moment(timeRange.end).toISOString()
+      );
+    }
+  }, [timeRange]);
+
+  function getRoomAvailabilityByDateRange(roomId, timeFilter = currentView) {
+    try {
+      // Define start and end dates
+      let startDate, endDate;
+
+      switch (timeFilter) {
+        case "dayGridMonth":
+          startDate = moment().startOf("month").toISOString();
+          endDate = moment().endOf("month").toISOString();
+          break;
+
+        case "timeGridWeek":
+          startDate = moment().startOf("week").toISOString();
+          endDate = moment().endOf("week").toISOString();
+          break;
+
+        case "timeGridDay":
+          startDate = moment().startOf("day").toISOString();
+          endDate = moment().endOf("day").toISOString();
+          break;
+
+        default:
+          console.warn("Invalid time filter, defaulting to weekly view.");
+          startDate = moment().startOf("week").toISOString();
+          endDate = moment().endOf("week").toISOString();
+          break;
+      }
+
+      getRoomBookingsByDateRangeAPIcall(roomId, startDate, endDate);
+    } catch (error) {
+      dispatch(
+        showErrorToast(error.response.data.error || "An error occurred!")
+      );
+      console.log("Error from getMeetingRoomAvailability", error);
+    }
+  }
+
+  async function getRoomBookingsByDateRangeAPIcall(roomId, startDate, endDate) {
+    try {
+      console.log("bhei dekh", { roomId, startDate, endDate });
+      if (!startDate || !endDate) {
+        return;
+      }
+      // return
+      // Fetch the room bookings based on the calculated date range
+      const { data: availability } = await getRoomBookingsByDateRange(
+        roomId,
+        startDate,
+        endDate
+      );
+      const modifiedEvents = availability.map((event) => ({
+        ...event,
+        backgroundColor: moment(event.start).isBefore(moment().startOf("day"))
+          ? "gray"
+          : "green", //getRandomColor()
+        start: startDate,
+        end: endDate,
+      }));
+      // Update state with retrieved events
+      // console.log("modifiedEvents", modifiedEvents);
+
+      setEvents(modifiedEvents);
+    } catch (error) {
+      console.log("Error from getMeetingRoomAvailability", error);
+    }
+  }
+  //dropdown for all meeting room
+  const getAllMeetingRooms = async () => {
+    try {
+      const { data: rooms } = await fetchRooms();
+      setRooms(rooms);
+    } catch (error) {
+      console.log("Error from getRooms", error);
+    }
+  };
+
+  useEffect(() => {
+    getAllMeetingRooms();
+  }, []);
+
+  const handleEventClick = (info) => {
+    console.log("Event clicked:", info.event);
+
+    const meetingData = {
+      ...info.event._def.extendedProps,
+      title: info.event._def.title,
+      allDay: info.event._def.allDay,
+    };
+    console.log("Event clicked after:", meetingData);
+    setModalEvent(meetingData);
+    setShowDetailsModal(true);
+  };
 
   const handleCloseModal = () => {
     setShowDetailsModal(false);
-    setModalEvent(null);
   };
 
-  const handleEventUpdate = useCallback(
-    async (info, updateType) => {
-      const eventId = info.event.extendedProps?._id || info.event.id;
-      const updatedEventData = {
-        // Prepare data needed by your updateBooking API
-        // This might just be start/end, or more depending on your API
-        start: moment(info.event.start).toISOString(),
-        end: moment(info.event.end).toISOString(),
-        // Include other fields if your updateBooking expects them
-        // subject: info.event.title, // Usually not changed on drop/resize
-      };
-
-      try {
-        // --- Client-side validation ---
-        if (moment(updatedEventData.start).isBefore(moment())) {
-          dispatch(showErrorToast("Cannot move booking to the past."));
-          info.revert(); // Revert the change visually
-          return;
-        }
-        if (
-          moment(updatedEventData.end).isSameOrBefore(
-            moment(updatedEventData.start)
-          )
-        ) {
-          dispatch(showErrorToast("End time must be after start time."));
-          info.revert();
-          return;
-        }
-        // --- End Client-side validation ---
-
-        // Optimistic UI update (optional but good UX)
-        // setEvents(currentEvents => currentEvents.map(ev =>
-        //     (ev.id || ev._id) === eventId
-        //         ? { ...ev, start: updatedEventData.start, end: updatedEventData.end }
-        //         : ev
-        // ));
-
-        await updateBooking(eventId, updatedEventData);
-
-        // Refetch or confirm update (refetching is safer)
-        getRoomBookingsByDateRangeAPIcall(
-          currentMeetingRom,
-          timeRange.start,
-          timeRange.end
-        );
-
-        dispatch(showSuccessToast("Booking updated successfully!"));
-      } catch (error) {
-        console.error(`Error from ${updateType}:`, error);
-        const errorMsg =
-          error.response?.data?.error ||
-          error.response?.data?.message ||
-          "Failed to update booking.";
-        dispatch(showErrorToast(errorMsg));
-        info.revert(); // Revert the change visually if API call fails
+  const handleEventDrop = async (info) => {
+    try {
+      if (new Date(info.event.start) < new Date()) {
+        return info.revert(); // Prevent moving to past
       }
-    },
-    [dispatch, currentMeetingRom, timeRange, getRoomBookingsByDateRangeAPIcall]
-  ); // Added dependencies
 
-  const handleEventDrop = useCallback(
-    (dropInfo) => {
-      console.log("Event dropped:", dropInfo.event);
-      handleEventUpdate(dropInfo, "handleEventDrop");
-    },
-    [handleEventUpdate]
-  );
+      const { _id: meetingId } = info.event.extendedProps;
 
-  const handleEventResize = useCallback(
-    (resizeInfo) => {
-      console.log("Event resized:", resizeInfo.event);
-      handleEventUpdate(resizeInfo, "handleEventResize");
-    },
-    [handleEventUpdate]
-  );
-
-  const handleCancelMeeting = useCallback(
-    async (meetingId) => {
-      if (!meetingId) return;
-      try {
-        await cancelBooking(meetingId);
-        setEvents((prevEvents) =>
-          prevEvents.filter((event) => (event.id || event._id) !== meetingId)
-        );
-        dispatch(showSuccessToast("Booking cancelled successfully!"));
-      } catch (error) {
-        console.error("Error from handleCancelMeeting", error);
-        const errorMsg =
-          error.response?.data?.message || "Failed to cancel booking.";
-        dispatch(showErrorToast(errorMsg));
-      } finally {
-        handleCloseModal(); // Close modal regardless of success/fail
-      }
-    },
-    [dispatch]
-  ); // Added dispatch dependency
-
-  // Fetch initial data
-  useEffect(() => {
-    const fetchInitialData = async () => {
-      setLoadingCalendar(true);
-      setFormError(null);
-      try {
-        const { data: roomData } = await fetchRooms();
-        setRooms(roomData);
-
-        // Set initial room ID if not present in URL, or validate URL room ID
-        let initialRoomId = roomId;
-        if (!initialRoomId && roomData.length > 0) {
-          initialRoomId = roomData[0]._id; // Default to first room
-          setSearchParam({ roomId: initialRoomId }); // Update URL
-        } else if (
-          initialRoomId &&
-          !roomData.some((r) => r._id === initialRoomId)
-        ) {
-          console.warn("Room ID from URL not found, defaulting to first room.");
-          initialRoomId = roomData.length > 0 ? roomData[0]._id : "";
-          if (initialRoomId) setSearchParam({ roomId: initialRoomId });
-          else setSearchParam({});
+      const updatedEvents = events.map((event) => {
+        if (event.title === info.event.title) {
+          return {
+            ...event,
+            start: moment(info.event.start).format(),
+            end: info.event.end ? moment(info.event.end).format() : null,
+          };
         }
-        setCurrentMeetingRoom(initialRoomId);
+        return event;
+      });
+      // update the meeting record and then update the state
+      const myUpdatedEvent = updatedEvents.find(
+        (event) => event._id === meetingId
+      );
+      await updateBooking(meetingId, {
+        ...myUpdatedEvent,
+      });
 
-        // Fetch initial events for the selected/default room and view
-        if (initialRoomId && calendarRef.current) {
-          const calendarApi = calendarRef.current.getApi();
-          const view = calendarApi.view;
-          setTimeRange({
-            // Set initial time range for useEffect trigger
-            start: moment(view.activeStart).toISOString(),
-            end: moment(view.activeEnd).toISOString(),
-          });
-          // getRoomBookingsByDateRangeAPIcall will be triggered by timeRange change
-        } else if (initialRoomId) {
-          // Fallback if calendarRef not ready (less likely but possible)
-          const start = moment().startOf("week").toISOString();
-          const end = moment().endOf("week").toISOString();
-          setTimeRange({ start, end });
-          // getRoomBookingsByDateRangeAPIcall will be triggered by timeRange change
-        }
-      } catch (error) {
-        console.error("Error fetching initial data:", error);
-        const errorMsg =
-          error.response?.data?.message || "Failed to load initial data.";
-        setFormError(errorMsg);
-        dispatch(showErrorToast(errorMsg));
-      } finally {
-        setLoadingCalendar(false);
-      }
-    };
-    fetchInitialData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Run only once on mount
-
-  // Refetch bookings when the selected room changes
-  useEffect(() => {
-    if (currentMeetingRom && timeRange.start && timeRange.end) {
-      getRoomBookingsByDateRangeAPIcall(
-        currentMeetingRom,
-        timeRange.start,
-        timeRange.end
+      setEvents(updatedEvents);
+      dispatch(showSuccessToast("Booking updated successfully!"));
+    } catch (error) {
+      info.revert();
+      console.log("Error from handleEventDrop", error);
+      dispatch(
+        showErrorToast(error.response.data.error || "An error occurred!")
       );
     }
-  }, [currentMeetingRom, timeRange, getRoomBookingsByDateRangeAPIcall]); // Added getRoomBookingsByDateRangeAPIcall
+  };
 
+  const handleEventResize = async (info) => {
+    console.log("Event resized:", info.event);
+
+    try {
+      if (new Date(info.event.end) <= new Date(info.event.start)) {
+        return info.revert(); // Prevent shrinking end time before start
+      }
+
+      const { _id: meetingId } = info.event.extendedProps;
+      const updatedEvents = events.map((event) => {
+        if (event.title === info.event.title) {
+          return {
+            ...event,
+            start: moment(info.event.start).format(),
+            end: moment(info.event.end).format(),
+          };
+        }
+        return event;
+      });
+      const myUpdatedEvent = updatedEvents.find(
+        (event) => event._id === meetingId
+      );
+      console.log("myUpdatedEvent", myUpdatedEvent);
+
+      await updateBooking(meetingId, {
+        ...myUpdatedEvent,
+      });
+
+      setEvents(updatedEvents);
+    } catch (error) {
+      info.revert();
+      console.log("Error from handleEventResize", error);
+      dispatch(
+        showErrorToast(error.response.data.error || "An error occurred!")
+      );
+    }
+  };
+
+  const handleNewBookingSchedule = (newBookingSchedule) => {
+    console.log("New booking schedule");
+    const modifiedEvents = [...events, newBookingSchedule];
+    setEvents(modifiedEvents);
+  };
+
+  const handleCancelMeeting = async (meetingId) => {
+    try {
+      await cancelBooking(meetingId);
+      const modifiedEvents = events.filter((event) => event._id !== meetingId);
+      setEvents(modifiedEvents);
+      dispatch(showSuccessToast("Booking cancelled successfully!"));
+    } catch (error) {
+      console.log("Error from handleCancelMeeting", error);
+      dispatch(
+        showErrorToast(error.response.data.message || "An error occurred!")
+      );
+    } finally {
+      setShowDetailsModal(false);
+    }
+  };
   // --- Refined Event Content Styling ---
   const renderEventContent = useCallback((eventInfo) => {
     return (
@@ -428,8 +349,12 @@ const Bookings = () => {
         flexDirection: "column",
       }}
     >
+      <Typography variant="h5" gutterBottom sx={{ textAlign: "center" }}>
+        Book a Room
+      </Typography>
+
       <Grid2 container spacing={3} sx={{ flexGrow: 1, overflow: "hidden" }}>
-        {/* --- Left Column --- */}
+        {/* --- Left Column FORM AND FAVORITES --- */}
         <Grid2
           item
           xs={12}
@@ -438,34 +363,31 @@ const Bookings = () => {
           sx={{
             display: "flex",
             flexDirection: "column",
-            height: "calc(100vh - 64px - 48px - 24px)",
+            // height: "calc(100vh - 64px - 48px - 24px)",
+            minWidth: "45%",
             overflowY: "auto",
-            pr: 1,
+            p: 2,
           }}
         >
           {" "}
           {/* Adjust height calc based on header/padding */}
           {/* Section for Booking Form */}
-          <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
-            <Typography variant="h6" gutterBottom component="div">
-              Book a Room
-            </Typography>
-            {/* Ensure BookRoomForm uses MUI internally */}
-            <BookRoomForm
-              rooms={rooms}
-              currentRoomId={currentMeetingRom}
-              handleRoomChange={handleRoomChange} // Passes the room ID
-              handleNewBookingSchedule={handleNewBookingSchedule}
-            />
-          </Paper>
-          {/* Section for Favorites */}
-          <Paper elevation={1} variant="outlined" sx={{ p: 2, flexGrow: 1 }}>
-            {/* Ensure Favorites uses MUI internally */}
-            <Favorites />
-          </Paper>
+          {/* <Paper elevation={2} sx={{ p: 2, mb: 3 }}> */}
+          <BookRoomForm
+            rooms={rooms}
+            currentRoomId={currentMeetingRom}
+            handleRoomChange={(newRoom) => {
+              console.log("handleRoomChange called----", newRoom);
+
+              getRoomAvailabilityByDateRange(null, newRoom);
+              setCurrentMeetingRoom(newRoom);
+            }}
+            handleNewBookingSchedule={handleNewBookingSchedule}
+          />
+          {/* </Paper> */}
         </Grid2>
 
-        {/* --- Right Column --- */}
+        {/* --- Right Column CALENDER --- */}
         <Grid2
           item
           xs={12}
@@ -475,6 +397,7 @@ const Bookings = () => {
             height: "calc(100vh - 64px - 48px)",
             display: "flex",
             flexDirection: "column",
+            flexGrow: 1,
           }}
         >
           {" "}
@@ -537,7 +460,7 @@ const Bookings = () => {
                 // Consider adding these for better UX:
                 // selectable={true} // Allows selecting time slots
                 // select={handleDateSelect} // Handler for when a date/time is selected
-                // eventMaxStack={3} // Limit number of events shown before "+ more"
+                eventMaxStack={3} // Limit number of events shown before "+ more"
               />
             )}
           </Paper>
@@ -632,8 +555,8 @@ const Bookings = () => {
               )}
               <Divider sx={{ my: 2 }} />
               <MeetingLinks
-                outlookWebLink={modalEvent?.webLink}
-                teamsJoinUrl={modalEvent?.teamsLink}
+                outlookWebLink={modalEvent?.outlookWebLink}
+                teamsJoinUrl={modalEvent?.teamsJoinUrl}
               />
             </Box>
           ) : (

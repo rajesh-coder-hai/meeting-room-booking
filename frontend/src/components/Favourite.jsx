@@ -232,7 +232,7 @@ function Favorites({ attendees = [], oSelectedAttendees = [] }) {
     setShowEditModal(true); // Open the Edit Modal
   };
   // / Example dimensions - adjust as needed
-  const listHeight = "300px"; // e.g., fixed height
+  const listHeight = "400px"; // e.g., fixed height
   const listWidth = "100%"; // e.g., take full width of its container
 
   return (
@@ -243,10 +243,6 @@ function Favorites({ attendees = [], oSelectedAttendees = [] }) {
         component="div"
         sx={{ textAlign: "center", mb: 2, fontWeight: "bold" }}
       >
-        Manage Favorites Attendees
-      </Typography>
-
-      <Box sx={{ display: "flex", justifyContent: "center", gap: 2 }}>
         <Fab
           color="primary"
           aria-label="add"
@@ -255,7 +251,11 @@ function Favorites({ attendees = [], oSelectedAttendees = [] }) {
           disabled={attendees.length === 0} // Disable if no users are selected
         >
           <StarBorderIcon />
-        </Fab>
+        </Fab>{" "}
+        Manage Favorites Attendees
+      </Typography>
+
+      <Box sx={{ display: "flex", justifyContent: "center", gap: 2 }}>
         {/* commenting below functionality for now */}
         {/* <Fab color="secondary" aria-label="edit" onClick={handleEditClick}>
           <EditIcon />

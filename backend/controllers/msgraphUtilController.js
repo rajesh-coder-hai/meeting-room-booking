@@ -65,7 +65,7 @@ exports.createCalenderEvent = async (req, res) => {
     }
 };
 
-exports.createCalenderEventWithBooking = async (body) => {
+exports.createCalenderEventWithBooking = async (body, res) => {
     console.log("createCalenderEventWithBooking", body);
 
     const { userId, subject, startDateTime, endDateTime, attendees, accessToken, location, isAllDay } =
@@ -84,11 +84,11 @@ exports.createCalenderEventWithBooking = async (body) => {
             {
                 subject,
                 body: { contentType: "HTML", content: subject },
-                start: { dateTime: startDateTime, timeZone: "UTC" },
-                end: { dateTime: endDateTime, timeZone: "UTC" },
+                start: { dateTime: new Date(startDateTime).toISOString(), timeZone: "UTC" },
+                end: { dateTime: new Date(endDateTime).toISOString(), timeZone: "UTC" },
                 location: { displayName: `${location}` },
                 attendees: attendees.map((attendee) => ({
-                    emailAddress: { address: attendees.email, name: attendee.displayName || attendees.id },
+                    emailAddress: { address: attendee.email, name: attendee.displayName || attendee.id },
                     type: "required",
                 })),
                 isAllDay: isAllDay,

@@ -6,6 +6,9 @@ const handleApiError = require('../utils/errorHandler');
 exports.getRooms = async (req, res) => {
   try {
     const query = {};
+    const search = req.query.search || '';
+    console.log('search value hai******', search);
+
     // Boolean example
     if (req.query.projector !== undefined) {
       query.projector = req.query.projector === 'true'; // Convert string 'true' to boolean

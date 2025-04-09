@@ -40,9 +40,9 @@ function getFloorName(floorNumber) {
 // Book a meeting room
 exports.bookRoom = async (req, res) => {
     const token = req.accessToken
-    const { roomId, start, end, title, attendees, allDay } = req.body;
+    const { roomId, startDateTime, endDateTime, subject, attendees, isAllDay, description, teamName } = req.body;
     //check if room is available
-    const available = await isRoomAvailable(roomId, start, end);
+    const available = await isRoomAvailable(roomId, startDateTime, endDateTime);
     // console.log("ms token---", token);
 
     if (!available) {
@@ -58,22 +58,22 @@ exports.bookRoom = async (req, res) => {
         //create calender event
         const eventResponse = await createCalenderEventWithBooking({
             userId: req.user.microsoftId,
-            subject: title,
-            startDateTime: start,
-            endDateTime: end,
-            attendees: attendees,
+            subject,
+            startDateTime,
+            endDateTime,
+            attendees,
             accessToken: token,
             location: `CONF - ${room.roomName} ${floorName}`,
-            isAllDay: allDay,
-        });
+            isAllDay,
+        }, res);
 
         const bookingResponse = await Booking.create({
             ...req.body,
             user: req.user._id,
         });
 
-        console.log("calender event data booking controller", eventResponse);
-        res.status(201).json({ ...eventResponse, ...bookingResponse });
+        console.log("calender event data booking controller", bookingResponse);
+        res.status(201).json(eventResponse);
     } catch (error) {
         handleApiError(error, res, "Fail to book room");
     }
@@ -106,8 +106,8 @@ exports.viewBookingsByDateRange = async (req, res) => {
             roomId,
             $or: [
                 {
-                    start: { $lte: endDate },
-                    end: { $gte: startDate },
+                    start: { $lte: startDate },
+                    end: { $gte: endDate },
                 },
             ],
         }).populate("roomId");

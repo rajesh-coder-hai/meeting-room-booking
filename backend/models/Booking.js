@@ -12,15 +12,15 @@ const bookingSchema = new mongoose.Schema(
       ref: "Room", // Assuming you have a Room model
       required: true,
     },
-    start: {
-      type: String, // Storing as string, but ideally should be Date
+    startDateTime: {
+      type: Date,
       required: true,
     },
-    end: {
-      type: String,
+    endDateTime: {
+      type: Date,
       required: true,
     },
-    title: {
+    subject: {
       type: String,
       required: true,
       trim: true,
@@ -30,11 +30,16 @@ const bookingSchema = new mongoose.Schema(
       trim: true,
       default: null, // Optional field
     },
+    description: {
+      type: String,
+      trim: true,
+      default: null, // Optional field
+    },
     extendedProps: {
       type: mongoose.Schema.Types.Mixed, // Allows any object structure
       default: {},
     },
-    allDay: {
+    isAllDay: {
       type: Boolean,
       default: false,
     },
