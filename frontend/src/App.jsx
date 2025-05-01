@@ -15,6 +15,8 @@ import { userProfile } from "./api/api";
 import { useDispatch } from "react-redux";
 import { setProfile } from "./store/slices/sharedSlice";
 import RoomManager from "./pages/RoomManager";
+import MenuPage from "./pages/MenuPage";
+import OrderHistoryPage from "./pages/OrderHistoryPage";
 const App = () => {
   const dispatch = useDispatch();
   const token = localStorage.getItem("token");
@@ -55,6 +57,12 @@ const App = () => {
         <Route path="/login" element={<Home />} />
         <Route path="/bookings" element={<Bookings />} />
         <Route path="/rooms" element={<RoomManager />} />
+        <Route path="/menu" element={<MenuPage />} />
+        <Route path="/order-history" element={<OrderHistoryPage />} />
+        {/* Add other routes for login, orders, admin etc. */}
+        {/* <Route path="/checkout" element={<CheckoutPage />} />
+      
+        <Route path="/admin/menu" element={<AdminMenuPage />} /> */}
         <Route path="*" element={<NotFound />} />
       </Routes>
     </Router>

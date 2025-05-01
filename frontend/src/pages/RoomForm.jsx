@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
-import "bootstrap/dist/css/bootstrap.min.css"; // Import Bootstrap CSS
+// import "bootstrap/dist/css/bootstrap.min.css"; // Import Bootstrap CSS
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"; // Import FontAwesome (if using)
 import { faSave, faPlus } from "@fortawesome/free-solid-svg-icons"; // Example icons
 
@@ -219,15 +219,15 @@ function RoomForm({ room, onSubmit, onCancel }) {
           {/* Buttons */}
           <div className="d-flex justify-content-end">
             {/* Cancel button if onEdit */}
-            
-              <button
-                type="button"
-                className="btn btn-outline-secondary me-2"
-                onClick={onCancel}
-              >
+
+            <button
+              type="button"
+              className="btn btn-outline-secondary me-2"
+              onClick={onCancel}
+            >
               Cancel
-              </button>
-            
+            </button>
+
             <button
               type="submit"
               className="btn btn-primary me-2"

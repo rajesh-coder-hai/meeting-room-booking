@@ -27,18 +27,9 @@ import {
 import SearchUser from "./SearchUser";
 import Favorites from "./Favourite";
 import MeetingLinks from "./MeetingLinks";
+import { getFloorName } from "../helper";
 
 // Helper function (keep as is)
-function getFloorName(floorNumber) {
-  if (floorNumber == null || floorNumber === undefined) return ""; // Handle null/undefined
-  if (floorNumber === 0) return "Ground";
-  if (floorNumber === -1) return "Lower ground";
-  const n = Math.abs(floorNumber);
-  const suffix = ["th", "st", "nd", "rd"][
-    n % 100 > 3 && n % 100 < 21 ? 0 : n % 10 < 4 ? n % 10 : 0
-  ];
-  return `${n}${suffix} floor`;
-}
 
 const BookRoomForm = ({
   rooms,
@@ -81,19 +72,21 @@ const BookRoomForm = ({
         roomId: currentRoomId,
       };
 
-      const { data: newEventData } = await bookRoom(payload); // Assuming bookRoom now handles userId/token
-
+      const { data: resp } = await bookRoom(payload); // Assuming bookRoom now handles userId/token
+      const { data: newEventData } = resp;
+      const outlookLink = newEventData?.webLink;
+      const teamsJoinUrl = newEventData?.onlineMeeting?.joinUrl;
       handleNewBookingSchedule({
         ...payload,
-        outlookWebLink: newEventData.webLink,
-        teamsJoinUrl: newEventData.onlineMeeting.joinUrl,
+        outlookWebLink: outlookLink,
+        teamsJoinUrl: teamsJoinUrl,
       }); // Pass original payload and event data
       dispatch(showSuccessToast("Room booked successfully!"));
       resetForm(); // Clear form on success
       setSelectedAttendees([]); // Clear attendees
       setMeetingUrls({
-        outlookWebLink: newEventData.webLink,
-        teamsJoinUrl: newEventData.onlineMeeting.joinUrl,
+        outlookWebLink: outlookLink,
+        teamsJoinUrl: teamsJoinUrl,
       });
     } catch (error) {
       console.error("Booking Error:", error);
@@ -431,10 +424,14 @@ const BookRoomForm = ({
               </Box>
             </Box>
           </Box>
-          <MeetingLinks
-            outlookWebLink={meetingUrls.outlookWebLink}
-            teamsJoinUrl={meetingUrls.teamsJoinUrl}
-          />
+          {meetingUrls &&
+            meetingUrls.teamsJoinUrl &&
+            meetingUrls.outlookWebLink && (
+              <MeetingLinks
+                outlookWebLink={meetingUrls.outlookWebLink}
+                teamsJoinUrl={meetingUrls.teamsJoinUrl}
+              />
+            )}
         </Form>
       )}
     </Formik>
