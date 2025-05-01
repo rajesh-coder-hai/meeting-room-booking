@@ -1,55 +1,48 @@
-version: '3.8'
+version: "3.8" # Specify docker-compose version
+
 services:
+  # Backend Service (Node.js/Express)
   backend:
-    build: ./backend
+    build:
+      context: ./backend # Path to backend directory relative to docker-compose.yml
+      dockerfile: Dockerfile # Assumes Dockerfile is named 'Dockerfile' in ./backend
     container_name: meeting-room-backend
-    restart: always
     ports:
-      - "5000:5000"
-    depends_on:
-      - mongo
-    environment:
-      - MONGO_URI=mongodb://root:admin2008@mongo:27017/meetingRoomBooking?authSource=admin
+      - "5000:5000" # Map host port 5000 to container port 5000 (or your backend PORT)
+    env_file:
+      - ./backend/.env # Load environment variables from backend/.env
     volumes:
-      - ./backend:/usr/src/app
-      - /usr/src/app/node_modules
+      # Mount source code for development hot-reloading
+      # Exclude node_modules by using a named volume trick or let Docker handle it
+      - ./backend:/app
+      - /app/node_modules # Use a volume to persist node_modules separately if needed, or just ignore
+    # Command to run the backend development server (adjust if your script is different)
+    command: npm run start
+    restart: unless-stopped
 
+  # Frontend Service (React/Vite)
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend # Path to frontend directory
+      dockerfile: Dockerfile # Assumes Dockerfile is named 'Dockerfile' in ./frontend
     container_name: meeting-room-frontend
-    restart: always
     ports:
-      - "3000:3000"
-    depends_on:
+      - "5173:5173" # Map host port 5173 to container port 5173 (Vite default)
+    # Vite uses import.meta.env, which reads .env files at runtime.
+    # Mounting the volume below makes the .env file available inside the container.
+    # Alternatively, pass specific variables using 'environment:' key if preferred.
+    # env_file:
+    #   - ./frontend/.env # This might load them for build stage if needed by Dockerfile, but runtime is key for Vite
+    volumes:
+      # Mount source code for development hot-reloading
+      - ./frontend:/app
+      - /app/node_modules # Use a volume or ignore node_modules
+    # Command to run the frontend development server (Vite default)
+    command: npm run start -- --host # Use --host to expose the server outside the container
+    restart: unless-stopped
+    depends_on: # Optional: Waits for backend to start, but doesn't guarantee readiness
       - backend
-    environment:
-      - REACT_APP_API_URL=http://localhost:5000
-    volumes:
-      - ./frontend:/usr/src/app
-      - /usr/src/app/node_modules
-
-  mongo:
-    image: mongo
-    container_name: mongo
-    restart: always
-    ports:
-      - "27017:27017"
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD: admin2008
-    volumes:
-      - mongo-data:/data/db
-
-  mongo-express:
-    image: mongo-express
-    container_name: mongo-express
-    restart: always
-    ports:
-      - "8081:8081"
-    environment:
-      ME_CONFIG_MONGODB_ADMINUSERNAME: root
-      ME_CONFIG_MONGODB_ADMINPASSWORD: admin2008
-      ME_CONFIG_MONGODB_SERVER: mongo
-
-volumes:
-  mongo-data:
+# Optional: Define named volumes if you excluded node_modules above
+# volumes:
+#   backend_node_modules:
+#   frontend_node_modules:
