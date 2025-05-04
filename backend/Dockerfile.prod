@@ -1,0 +1,27 @@
+# Use a stable LTS Node.js version (e.g., 18 or 20) on Alpine for smaller size
+FROM node:18-alpine
+
+# Set the working directory in the container
+WORKDIR /app
+
+# Copy package.json and package-lock.json (or yarn.lock) first
+# This leverages Docker layer caching - dependencies are only reinstalled
+# if package*.json changes.
+COPY package*.json ./
+
+# Install ONLY production dependencies
+# Using --omit=dev is preferred over NODE_ENV=production for modern npm
+# Using --ignore-scripts can sometimes break packages, remove if necessary
+# Using --only=prod is deprecated but sometimes seen
+RUN npm install --omit=dev --ignore-scripts
+
+# Now, copy the rest of your application source code into the container
+# This includes server.js, routes/, controllers/, models/, etc.
+COPY . .
+
+# Expose the port the app runs on (should match PORT env var)
+EXPOSE 5000
+
+# Command to run the production server using the script from package.json
+# This ensures it runs with 'node server.js' as defined there
+CMD [ "npm", "run", "start:prod" ]

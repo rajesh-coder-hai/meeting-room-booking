@@ -1,0 +1,3 @@
+push_backend_to_ecr.sh
+frontend/.env
+frontend/.env.production

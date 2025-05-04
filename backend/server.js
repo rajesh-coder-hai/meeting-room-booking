@@ -83,13 +83,6 @@ async function run() {
     console.error("DB Connection Error:", error);
     process.exit(1); // Exit the process if DB connection fails
   }
-  // *** REMOVE the finally block with mongoose.disconnect() ***
-  // The connection should stay open while the server is running.
-  // finally {
-  //   // Ensures that the client will close when you finish/error
-  //   await mongoose.disconnect();
-  // }
 }
 
-// Call the function to connect and start the server
-run(); // No need for .catch(console.dir) here if handled inside run()
+run();

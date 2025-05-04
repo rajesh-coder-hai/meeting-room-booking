@@ -1,8 +1,7 @@
 // services/notificationService.js
 const axios = require("axios"); // Or use node-fetch or specific SDKs (e.g., Twilio)
-
-// --- Helper function to format order details ---
-// services/notificationService.js (Helper function part)
+const TEAMS_WEBHOOK_URL =
+  "https://universityofcleveland.webhook.office.com/webhookb2/4b1f7cd3-c733-4cfb-8208-db932729a297@9810f93f-68e8-41cb-92b6-fc7e27d15e83/IncomingWebhook/4b46968d6bd7479dbdfc47c29462666f/74769a65-e308-44da-9ad0-1c281d19d7f2/V2h0xCN8KKOh5gQgSWwURCh967REL0VvtwEpN2hmJeW_81";
 
 // --- Helper function to format order details ---
 function formatOrderForNotification(order, user) {
@@ -67,7 +66,7 @@ const notificationService = {
     const details = formatOrderForNotification(order, user);
 
     // --- Send to Microsoft Teams (Guard) ---
-    if (process.env.TEAMS_WEBHOOK_URL) {
+    if (TEAMS_WEBHOOK_URL) {
       const teamsPayload = {
         "@type": "MessageCard",
         "@context": "http://schema.org/extensions",
@@ -87,7 +86,7 @@ const notificationService = {
         ],
       };
       try {
-        await axios.post(process.env.TEAMS_WEBHOOK_URL, teamsPayload);
+        await axios.post(TEAMS_WEBHOOK_URL, teamsPayload);
         console.log(`Teams notification sent for Order ID: ${order._id}`);
       } catch (error) {
         console.error(

@@ -17,4 +17,4 @@ COPY . .
 EXPOSE 5000
 
 # Default command to run the app (docker-compose 'command:' will override this for dev)
-CMD [ "npm", "start" ]
+CMD [ "npm", "run","start:dev" ]
