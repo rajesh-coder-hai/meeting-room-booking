@@ -18,10 +18,26 @@ require("dotenv").config();
 
 const app = express();
 app.use(express.json());
+// Define allowed origins
+const allowedOrigins = [
+  "http://localhost:5173", // Your local frontend
+  "https://d369a6nc9a1eio.cloudfront.net", // Add your custom domain here too if you set one up, e.g.:'https://roomsync.yourdomain.com'
+];
+
 app.use(
   cors({
     credentials: true,
-    origin: "http://localhost:5173",
+    origin: function (origin, callback) {
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
+      // Allow requests from whitelisted origins
+      if (allowedOrigins.indexOf(origin) === -1) {
+        const msg =
+          "The CORS policy for this site does not allow access from the specified Origin.";
+        return callback(new Error(msg), false);
+      }
+      return callback(null, true);
+    },
   })
 );
 
